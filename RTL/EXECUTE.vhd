@@ -23,7 +23,9 @@ entity EXECUTE is
           g_CONTROL_WIDTH : integer := 4;
           g_ADDRESS_WIDTH : integer := 32;
           g_REGISTER_ADDRESS_WIDTH : integer := 5);
-  port(--ALU OPERANDS
+  port(in_clk       : in std_logic; --clock
+       in_clr       : in std_logic; --clear
+       --ALU OPERANDS
        in_rega      : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --operand a of ALU
        in_shfta     : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --shift operand for ALU input a
        in_regb      : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --operand b of ALU
@@ -51,48 +53,95 @@ entity EXECUTE is
        out_memb     : out std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --ALU operand b
        out_dreg     : out std_logic_vector(g_REGISTER_ADDRESS_WIDTH - 1 downto 0); --destination register
        out_alures   : out std_logic_vector(g_REGISTER_WIDTH - 1 downto 0)); --ALU result (also used for formwarding)
-end;
+end entity;
 
 architecture behavior of EXECUTE is
-  signal w_aluop_a : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
-  signal w_aluop_b : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
-  signal w_alures  : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
-  signal w_zflag   : std_logic;
-  signal w_pcres   : std_logic_vector(g_ADDRESS_WIDTH - 1 downto 0);
+  --PIPELINE REGISTER FOR OUTPUT SIGNALS OF INSTRUCTION DECODE PHASE
+  signal r_rega     : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
+  signal r_shfta    : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
+  signal r_regb     : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
+  signal r_immb     : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
+  signal r_alucntrl : std_logic_vector(g_CONTROL_WIDTH - 1 downto 0);
+  signal r_alushft  : std_logic;
+  signal r_aluimm   : std_logic;
+  signal r_pc       : std_logic_vector(g_ADDRESS_WIDTH - 1 downto 0);
+  signal r_jal      : std_logic;
+  signal r_dreg     : std_logic_vector(g_REGISTER_ADDRESS_WIDTH - 1 downto 0);
+  signal r_wrmem    : std_logic;
+  signal r_wrreg    : std_logic;
+  signal r_ldreg    : std_logic;
+
+  signal w_aluop_a  : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
+  signal w_aluop_b  : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
+  signal w_alures   : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
+  signal w_pcres    : std_logic_vector(g_ADDRESS_WIDTH - 1 downto 0);
 
   component ALU is
     port(in_op_a, in_op_b, in_cntrl : in std_logic;
-         out_zflag, out_res : out std_logic);
+         out_res : out std_logic);
   end component;
 
 begin
+  --LOAD PIPELINE REGISTER
+  p_PIPELINE_REGISTER: process(in_clk)
+  begin
+    if(rising_edge(in_clk)) then
+      r_rega <= in_rega;
+      r_shfta <= in_shfta;
+      r_regb <= in_regb;
+      r_immb <= in_immb;
+      r_alucntrl <= in_alucntrl;
+      r_alushft <= in_alushft;
+      r_aluimm <= in_aluimm;
+      r_pc <= in_pc;
+      r_jal <= in_jal;
+      r_dreg <= in_dreg;
+      r_wrmem <= in_wrmem;
+      r_wrreg <= in_wrreg;
+      r_ldreg <= in_ldreg;
+    end if;
+    if(falling_edge(in_clr)) then
+      r_rega <= (others => '0');
+      r_shfta <= (others => '0');
+      r_regb <= (others => '0');
+      r_immb <= (others => '0');
+      r_alucntrl <= (others => '0');
+      r_alushft <= '0';
+      r_aluimm <= '0';
+      r_pc <= (others => '0');
+      r_jal <= '0';
+      r_dreg <= (others => '0');
+      r_wrmem <= '0';
+      r_wrreg <= '0';
+      r_ldreg <= '0';
+    end if;
+  end process;
   --MULTIPLEX ALU OPERAND A
-  w_aluop_a <= in_rega when in_alushft = '0' else
-               in_shfta when in_alushft = '1';
+  w_aluop_a <= r_rega when r_alushft = '0' else
+               r_shfta when r_alushft = '1';
   --MULTIPLEX ALU OPERAND B
-  w_aluop_b <= in_regb when in_aluimm = '0' else
-               in_immb when in_aluimm = '1';
+  w_aluop_b <= r_regb when r_aluimm = '0' else
+               r_immb when r_aluimm = '1';
   --ALU CONNECTION
   alu1: entity work.ALU(behavior) -- instance of ALU.vhd
   generic map(g_REGISTER_WIDTH => g_REGISTER_WIDTH,
               g_CONTROL_WIDTH => g_CONTROL_WIDTH)
   port map (in_op_a => w_aluop_a,
             in_op_b => w_aluop_b,
-            in_cntrl => in_alucntrl,
-            out_zflag => w_zflag,
+            in_cntrl => r_alucntrl,
             out_res => w_alures);
   --GENERATE NEW PROGRAM COUNTER
-  w_pcres <= std_logic_vector(unsigned(in_pc) + 4);
+  w_pcres <= std_logic_vector(unsigned(r_pc) + 4);
   --MULTIPLEX ALU OUTPUT
-  out_alures <= w_alures when in_jal = '0' else
-                w_pcres when in_jal = '1';
+  out_alures <= w_alures when r_jal = '0' else
+                w_pcres when r_jal = '1';
   --SET DESTINATION REGISTER
-  out_dreg <= in_dreg when in_jal = '0' else
-              (others => '1') when in_jal = '1';
+  out_dreg <= r_dreg when r_jal = '0' else
+              (others => '1') when r_jal = '1';
   --CONTROL SIGNAL PASS THROUGH
-  out_wrmem <= in_wrmem;
-  out_wrreg <= in_wrreg;
-  out_ldreg <= in_ldreg;
+  out_wrmem <= r_wrmem;
+  out_wrreg <= r_wrreg;
+  out_ldreg <= r_ldreg;
   --VALUE PASS THROUGH
-  out_memb <= in_regb;
+  out_memb <= r_regb;
 end behavior;
