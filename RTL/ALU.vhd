@@ -1,4 +1,4 @@
--- This is the ALU of the MIPS CPU capable of addition/subtraction/ANDing/ORing/XORing/shifting operands
+-- This is the ALU of the RISC-V CPU capable of addition/subtraction/ANDing/ORing/XORing/shifting operands
 -- Copyright (C) 2020  Johannes Bonk
 --
 -- This program is free software: you can redistribute it and/or modify

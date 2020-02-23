@@ -1,4 +1,4 @@
--- This module describes the execution stage of the MIPS CPU
+-- This module describes the execution stage of the RISC-V CPU
 -- Copyright (C) 2020  Johannes Bonk
 --
 -- This program is free software: you can redistribute it and/or modify
@@ -52,7 +52,7 @@ entity EXECUTE is
        --OPERAND OUTPUT
        out_memb     : out std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --ALU operand b
        out_dreg     : out std_logic_vector(g_REGISTER_ADDRESS_WIDTH - 1 downto 0); --destination register
-       out_alures   : out std_logic_vector(g_REGISTER_WIDTH - 1 downto 0)); --ALU result (also used for formwarding)
+       out_alures   : out std_logic_vector(g_REGISTER_WIDTH - 1 downto 0)); --ALU result (also used for forwarding)
 end entity;
 
 architecture behavior of EXECUTE is
@@ -75,6 +75,11 @@ architecture behavior of EXECUTE is
   signal w_aluop_b  : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
   signal w_alures   : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
   signal w_pcres    : std_logic_vector(g_ADDRESS_WIDTH - 1 downto 0);
+
+  component BranchUnit is
+    port(in_reg_a, in_reg_b : in std_logic;
+         out_eq, out_lt, out_ltu : out std_logic);
+  end component;
 
   component ALU is
     port(in_op_a, in_op_b, in_cntrl : in std_logic;
@@ -138,10 +143,4 @@ begin
   --SET DESTINATION REGISTER
   out_dreg <= r_dreg when r_jal = '0' else
               (others => '1') when r_jal = '1';
-  --CONTROL SIGNAL PASS THROUGH
-  out_wrmem <= r_wrmem;
-  out_wrreg <= r_wrreg;
-  out_ldreg <= r_ldreg;
-  --VALUE PASS THROUGH
-  out_memb <= r_regb;
 end behavior;
