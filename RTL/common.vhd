@@ -43,8 +43,14 @@ package common is
     constant c_MUXRS2ZEXUI : muxrs2_t := "11";
 
    subtype muxalu_t is std_logic_vector(1 downto 0);
-    constant c_MUXALUALU   : muxalut := "00";
+    constant c_MUXALUALU   : muxalu_t := "00";
     constant c_MUXALUMEM   : muxalu_t := "01";
     constant c_MUXALUPC    : muxalu_t := "10";
     constant c_MUXRALUINVALID  : muxalu_t := "11";
+
+   subtype muxpc_t is std_logic_vector(1 downto 0);
+    constant c_MUXPCPC4    : muxpc_t  := "00";
+    constant c_MUXPCBRANCH : muxpc_t := "01";
+    constant c_MUXPCJMP    : muxpc_t := "10";
+    constant c_MUXPCJALR   : muxpc_t := "11";
 end package common;

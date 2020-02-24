@@ -1,4 +1,4 @@
--- This is the ALU of the RISC-V CPU capable of addition/subtraction/ANDing/ORing/XORing/shifting operands
+-- This is the ALU of the RISC-V CPU capable of addition/subtraction/ANDing/ORing/XORing/shifting/slt/lui operands
 -- Copyright (C) 2020  Johannes Bonk
 --
 -- This program is free software: you can redistribute it and/or modify
@@ -18,36 +18,51 @@ LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
 USE ieee.numeric_std.ALL;
 
+USE work.common.ALL;
+
 entity ALU is
   generic(g_REGISTER_WIDTH : integer;
           g_CONTROL_WIDTH : integer);
-  port(in_op_a   : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --input operand a
-       in_op_b   : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --input operand b
-       in_cntrl  : in std_logic_vector(g_CONTROL_WIDTH downto 0); --control inputs
+  port(in_rs1   : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --input register 1
+       in_rs2   : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --input register 2
+       in_cntrl  : in alucntrl_t; --control inputs
 
        out_res   : out std_logic_vector(g_REGISTER_WIDTH - 1 downto 0)); --result output
 end entity;
 
 architecture behavior of ALU is
-  signal w_arith_out : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --result of addition/subtraction of operands
-  signal w_ano_out : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --result of and/or operation on operands
-  signal w_xui_out : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --result of xor/lui operation on operands
-  signal w_shft_out : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --result of shift operation on operands
-
+  signal w_slt : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
+  signal w_sltu : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
 begin
-  w_arith_out <= std_logic_vector(unsigned(in_op_a) + unsigned(in_op_b)) when in_cntrl(2) = '0' else
-                 std_logic_vector(unsigned(in_op_a) - unsigned(in_op_b)) when in_cntrl(2) = '1';
-  w_ano_out <=   in_op_a and in_op_b when in_cntrl(2) = '0' else
-                 in_op_a or in_op_b when in_cntrl(2) = '1';
-  w_xui_out <=   in_op_a xor in_op_b when in_cntrl(2) = '0' else
-                 std_logic_vector(shift_left(unsigned(in_op_a), 16)) when in_cntrl(2) = '1';
-  w_shft_out <=  std_logic_vector(shift_left(unsigned(in_op_b), to_integer(unsigned(in_op_a)))) when in_cntrl(2) = '0' else
-                 std_logic_vector(shift_right(unsigned(in_op_b), to_integer(unsigned(in_op_a)))) when in_cntrl(2) = '1' and in_cntrl(3) = '0' else
-                 std_logic_vector(shift_right(signed(in_op_b), to_integer(unsigned(in_op_a)))) when in_cntrl(2) = '1' and in_cntrl(3) = '1';
 
-  --multiplex required operation reult based on lower 2 control bits
-  out_res <= w_arith_out when in_cntrl(1 downto 0) = "00" else
-           w_ano_out when in_cntrl(1 downto 0) = "01" else
-           w_xui_out when in_cntrl(1 downto 0) = "10" else
-           w_shft_out when in_cntrl(1 downto 0) = "11";
+  p_SLT : process(in_rs1, in_rs2) is
+  begin
+    if(signed(in_rs1) < signed(in_rs2)) then
+      w_slt <= std_logic_vector(to_unsigned(1, w_slt'length));
+    else
+      w_slt <= std_logic_vector(to_unsigned(0, w_slt'length));
+    end if;
+  end process;
+
+  p_SLTU : process(in_rs1, in_rs2) is
+  begin
+    if(unsigned(in_rs1) < unsigned(in_rs2)) then
+      w_sltu <= std_logic_vector(to_unsigned(1, w_sltu'length));
+    else
+      w_sltu <= std_logic_vector(to_unsigned(0, w_sltu'length));
+    end if;
+  end process;
+
+  --multiplex required operation
+  out_res <= std_logic_vector(unsigned(in_rs1) + unsigned(in_rs2)) when in_cntrl = c_ALU_ADD else --addition
+             std_logic_vector(unsigned(in_rs1) - unsigned(in_rs2))  when in_cntrl = c_ALU_SUB else --subtraction
+             in_rs1 and in_rs2 when in_cntrl = c_ALU_AND else --ANDing
+             in_rs1 or in_rs2 when in_cntrl = c_ALU_OR else --ORing
+             in_rs1 xor in_rs2 when in_cntrl = c_ALU_XOR else --XORing
+             std_logic_vector(shift_left(unsigned(in_rs2), to_integer(unsigned(in_rs1)))) when in_cntrl = c_ALU_SLL else --shift left logically
+             std_logic_vector(shift_right(unsigned(in_rs2), to_integer(unsigned(in_rs1)))) when in_cntrl = c_ALU_SRL else --shift right logically
+             std_logic_vector(shift_right(signed(in_rs2), to_integer(unsigned(in_rs1)))) when in_cntrl = c_ALU_SRA else --shift right arithmetically
+             w_slt when in_cntrl = c_ALU_SLT else --set less than
+             w_sltu when in_cntrl = c_ALU_SLTU else --set less than unsigned
+             std_logic_vector(shift_left(unsigned(in_rs1), 16)) when in_cntrl = c_ALU_LUI; --load upper immediate
 end behavior;
