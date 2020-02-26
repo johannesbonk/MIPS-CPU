@@ -19,12 +19,9 @@ USE ieee.std_logic_1164.ALL;
 USE ieee.numeric_std.ALL;
 
 entity ControlUnit is
-  generic(g_REGISTER_WIDTH : integer := 32;
-          g_ADDRESS_WIDTH : integer := 32;
-          g_REGISTER_ADDRESS_WIDTH : integer := 5);
-  port(in_opcode  : in std_logic_vector(6 downto 0);
-       in_func3   : in std_logic_vector(downto 0);
-       in_func7   : in std_logic_vector(downto 0)
+  port(in_opcode  : in opcode_t;
+       in_func3   : in func3_t;
+       in_func7   : in func7_t;
        out_alucntrl : out alucntrl_t;
        out_muxrs1   : out muxrs1_t;
        out_muxrs2   : out muxrs2_t;

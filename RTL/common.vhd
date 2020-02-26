@@ -19,6 +19,10 @@ USE ieee.std_logic_1164.ALL;
 USE ieee.numeric_std.ALL;
 
 package common is
+  subtype opcode_t is std_logic_vector(6 downto 0);
+  subtype func3_t is std_logic_vector(2 downto 0);
+  subtype func7_t is std_logic_vector(6 downto 0);
+
   subtype alucntrl_t is std_logic_vector(3 downto 0);
     constant c_ALU_ADD  : alucntrl_t := "0000";
     constant c_ALU_SUB  : alucntrl_t := "1000";
