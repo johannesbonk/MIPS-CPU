@@ -24,11 +24,11 @@ entity FETCH is
   generic(g_REGISTER_WIDTH : integer);
   port(in_clk    : in std_logic;
        in_rst    : in std_logic;
-       in_pc     : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
-       in_pc4    : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
-       in_jump   : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
+       in_jump    : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
+       in_jalr   : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
        in_branch : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
        in_muxpc  : in muxpc_t;
+       in_muxnop : in muxnop_t;
 
        out_pc    : out std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
        out_pc4   : out std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
@@ -39,14 +39,10 @@ architecture behavior of ALU is
   --PC REGISTER
   signal r_pc : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
   --INTERNAL WIREING
+  signal w_pc4 : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
   signal w_pcmux : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
   signal w_memout : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
 begin
-  --SELECT CURRENT PC VALUE
-  w_pcmux <= in_pc when in_muxpc = "00" else
-             in_pc4 when in_muxpc = "01" else
-             in_jump when in_muxpc = "10" else
-             in_branch when in_muxpc = "11";
   --STORE CURRENT PC VALUE IN REGISTER
   p_PROGRAM_COUNTER : process(in_clk, in_rst)
   begin
@@ -54,12 +50,20 @@ begin
       r_pc <= w_pcmux;
     end if;
     if(falling_edge(in_rst)) then
-      r_pc <= (others => '0');
+        r_pc <= (others => '0');
     end if;
   end process;
+  --INCREMENT PC VALUE
+  w_pc4 <= std_logic_vector(unsigned(r_pc) + 4);
+  --SELECT CURRENT PC VALUE
+  w_pcmux <= in_pc4 when in_muxpc = "00" else
+             in_jump when in_muxpc = "01" else
+             in_jalr when in_muxpc = "10" else
+             in_branch when in_muxpc = "11";
   --OUTPUT CURRENT PC VALUE AND INCREMENTED PC VALUE
   out_pc <= r_pc;
-  out_pc4 <= std_logic_vector(unsigned(r_pc) + 4);
-  --FETCH NEXT INSTRUCTION FROM MEMORY
-  out_instr <= w_memout;
+  out_pc4 <= w_pc4;
+  --FETCH NEXT INSTRUCTION FROM MEMORY OR STALL WITH NOP
+  out_instr <= w_memout when in_muxnop = '0' else
+               (others => '0') when in_muxnop = '1';
 end behavior;

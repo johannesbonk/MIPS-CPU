@@ -26,55 +26,47 @@ entity EXECUTE is
   port(in_clk       : in std_logic; --clock
        in_clr       : in std_logic; --clear
        --ALU OPERANDS
-       in_rega      : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --operand a of ALU
+       in_rs1       : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --operand a of ALU
+       in_rs2       : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --operand b of ALU
        in_shfta     : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --shift operand for ALU input a
-       in_regb      : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --operand b of ALU
-       in_immb      : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --immediate input for ALU input b
-       in_alucntrl  : in std_logic_vector(g_CONTROL_WIDTH - 1 downto 0); --ALU control signals
-       --ALU INPUT MULTIPLEXER CONTROL
-       in_alushft   : in std_logic; --selects shift count as ALU operand
-       in_aluimm    : in std_logic; --selects immediate value as ALU operand
-       --PROGRAM COUNTER INCREMENTATION
-       in_pc        : in std_logic_vector(g_ADDRESS_WIDTH - 1 downto 0);
-       --SELECTS EITHER ALU RESULT OR BRANCH DESTINATION
-       in_jal       : in std_logic;
-       --TEMPORARY DEST REGISTER
-       in_dreg      : in std_logic_vector(g_REGISTER_ADDRESS_WIDTH - 1 downto 0);
-       --CONTROL SIGNALS FOR MEMORY ADDRESS AND WRITE BACK STAGE
-       in_wrmem     : in std_logic; --write memory
-       in_wrreg     : in std_logic; --write register
-       in_ldreg     : in std_logic; --load register
-
-       --OUTPUT OF CONTROL SIGNALS FOR MEMORY ADDRESS AND WRITE BACK STAGE
-       out_wrmem    : out std_logic; --write memory
-       out_wrreg    : out std_logic; --write register
-       out_ldreg    : out std_logic; --load register
+       in_sgnexti   : in sgnexti_t;
+       in_sgnextsb  : in sgnextsb_t;
+       in_zeroextuj : in zeroextuj_t;
+       --OPERAND MULTIPLEXER
+       in_muxrs1    : in muxrs1_t;
+       in_muxrs2    : in muxrs2_t;
+       in_muxzero   : in muxzero_t;
+       in_muxalu    : in muxalu_t;
+       --UNIT CONTROL SIGNALS
+       in_alucntrl  : in alucntrl_t; --ALU control signals
+       in_regop     : in regop_t;
+       in_memop     : in memop_t;
        --OPERAND OUTPUT
-       out_memb     : out std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --ALU operand b
-       out_dreg     : out std_logic_vector(g_REGISTER_ADDRESS_WIDTH - 1 downto 0); --destination register
+       out_toreg    : out std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --value to save in register
        out_alures   : out std_logic_vector(g_REGISTER_WIDTH - 1 downto 0)); --ALU result (also used for forwarding)
 end entity;
 
 architecture behavior of EXECUTE is
   --PIPELINE REGISTER FOR OUTPUT SIGNALS OF INSTRUCTION DECODE PHASE
-  signal r_rega     : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
+  signal r_rs1      : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
   signal r_shfta    : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
-  signal r_regb     : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
-  signal r_immb     : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
-  signal r_alucntrl : std_logic_vector(g_CONTROL_WIDTH - 1 downto 0);
-  signal r_alushft  : std_logic;
-  signal r_aluimm   : std_logic;
-  signal r_pc       : std_logic_vector(g_ADDRESS_WIDTH - 1 downto 0);
-  signal r_jal      : std_logic;
-  signal r_dreg     : std_logic_vector(g_REGISTER_ADDRESS_WIDTH - 1 downto 0);
-  signal r_wrmem    : std_logic;
-  signal r_wrreg    : std_logic;
-  signal r_ldreg    : std_logic;
+  signal r_rs2      : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
+  signal r_sgnexti  : sgnexti_t;
+  signal r_sgnextsb : sgnextsb_t;
+  signal r_zeroextuj : zeroextuj_t;
+  signal r_muxrs1   : muxrs1_t;
+  signal r_muxrs2   : muxrs2_t;
+  signal r_muxalu   : muxalu_t;
+  signal r_muxzero  : muxzero_t;
+  signal r_alucntrl : alucntrl_t;
+  signal r_regop    : regop_t;
+  signal r_memop    : memop_t;
 
+  signal w_muxbout  : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
   signal w_aluop_a  : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
   signal w_aluop_b  : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
   signal w_alures   : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
-  signal w_pcres    : std_logic_vector(g_ADDRESS_WIDTH - 1 downto 0);
+  signal w_memout   : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
 
   component BranchUnit is
     port(in_reg_a, in_reg_b : in std_logic;
@@ -91,42 +83,46 @@ begin
   p_PIPELINE_REGISTER: process(in_clk)
   begin
     if(rising_edge(in_clk)) then
-      r_rega <= in_rega;
+      r_rs1 <= in_rs1;
       r_shfta <= in_shfta;
-      r_regb <= in_regb;
-      r_immb <= in_immb;
+      r_rs2 <= in_rs2;
+      r_sgnexti  <= in_sgnexti;
+      r_sgnextsb <= in_sgnextsb;
+      r_zeroextuj <= in_zeroextuj;
+      r_muxrs1 <= in_muxrs1;
+      r_muxrs2 <= in_muxrs2;
+      r_muxalu <= in_muxalu;
+      r_muxzero in_muxzero;
       r_alucntrl <= in_alucntrl;
-      r_alushft <= in_alushft;
-      r_aluimm <= in_aluimm;
-      r_pc <= in_pc;
-      r_jal <= in_jal;
-      r_dreg <= in_dreg;
-      r_wrmem <= in_wrmem;
-      r_wrreg <= in_wrreg;
-      r_ldreg <= in_ldreg;
+      r_regop <= in_regop;
+      r_memop <= in_memop;
     end if;
     if(falling_edge(in_clr)) then
-      r_rega <= (others => '0');
+      r_rs1 <= (others => '0');
       r_shfta <= (others => '0');
-      r_regb <= (others => '0');
-      r_immb <= (others => '0');
+      r_rs2 <= (others => '0');
+      r_sgnexti  <= (others => '0');
+      r_sgnextsb <= (others => '0');
+      r_zeroextuj <= (others => '0');
+      r_muxrs1 <= '0';
+      r_muxrs2 <= (others => '0');
+      r_muxalu <= (others => '0');
+      r_muxzero <= '0';
       r_alucntrl <= (others => '0');
-      r_alushft <= '0';
-      r_aluimm <= '0';
-      r_pc <= (others => '0');
-      r_jal <= '0';
-      r_dreg <= (others => '0');
-      r_wrmem <= '0';
-      r_wrreg <= '0';
-      r_ldreg <= '0';
+      r_regop <= (others => '0');
+      r_memop <= (others => '0');
     end if;
   end process;
   --MULTIPLEX ALU OPERAND A
-  w_aluop_a <= r_rega when r_alushft = '0' else
-               r_shfta when r_alushft = '1';
+   w_aluop_a <= r_rs1 when r_muxrs1 = '0' else
+                r_shfta when r_muxrs1 = '1';
   --MULTIPLEX ALU OPERAND B
-  w_aluop_b <= r_regb when r_aluimm = '0' else
-               r_immb when r_aluimm = '1';
+   w_muxbout <= r_rs2 when r_muxrs2 = "00" else
+                r_sgnexti when r_muxrs2 = "01" else
+                r_sgnextsb when r_muxrs2 = "10" else
+                r_zeroextuj when r_muxrs2 = "11";
+   w_aluop_b <= w_muxbout when  r_muxzero = '0' else
+                (others => '0') when r_muxzero = '1';
   --ALU CONNECTION
   alu1: entity work.ALU(behavior) -- instance of ALU.vhd
   generic map(g_REGISTER_WIDTH => g_REGISTER_WIDTH,
@@ -135,12 +131,10 @@ begin
             in_op_b => w_aluop_b,
             in_cntrl => r_alucntrl,
             out_res => w_alures);
-  --GENERATE NEW PROGRAM COUNTER
-  w_pcres <= std_logic_vector(unsigned(r_pc) + 4);
   --MULTIPLEX ALU OUTPUT
-  out_alures <= w_alures when r_jal = '0' else
-                w_pcres when r_jal = '1';
+  out_alures <= w_alures;
   --SET DESTINATION REGISTER
-  out_dreg <= r_dreg when r_jal = '0' else
-              (others => '1') when r_jal = '1';
+  out_toreg <= w_alures when r_muxalu = "00" else
+              w_memout when r_muxalu = "01" else
+              r_pc4 when r_muxalu = "10";
 end behavior;
