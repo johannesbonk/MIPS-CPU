@@ -40,7 +40,7 @@ entity EXECUTE is
        --UNIT CONTROL SIGNALS
        in_alucntrl  : in alucntrl_t; --ALU control signals
        in_regop     : in regop_t;
-       in_memop     : in memop_t;
+       in_wmem     : in wmem_t;
        --OPERAND OUTPUT
        out_toreg    : out std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --value to save in register
        out_alures   : out std_logic_vector(g_REGISTER_WIDTH - 1 downto 0)); --ALU result (also used for forwarding)

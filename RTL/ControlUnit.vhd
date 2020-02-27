@@ -23,11 +23,14 @@ entity ControlUnit is
        in_func3   : in func3_t;
        in_func7   : in func7_t;
        out_alucntrl : out alucntrl_t;
+       out_regop    : out regop_t;
+       out_memop    : out memop_t;
        out_muxrs1   : out muxrs1_t;
        out_muxrs2   : out muxrs2_t;
+       out_muxshamt : out muxshamt_t;
        out_muxalu   : out muxalu_t;
-       out_regop    : out regop_t;
-       out_memop    : out memop_t
+       out_muxpc    : out muxpc_t;
+       out_muxnop   : out muxnop_t
        );
 end entity;
 
@@ -63,17 +66,30 @@ begin
         when b"111" => --andi
     when b"00101" => --add upper immediate (aui) opcode
     when b"01100" => --reg-reg(arithmetic) opcode
-        --b"000" add/sub decided by func7
-        --b"001" sll
-        --b"010" slt
-        --b"011" sltu
-        --b"100" xor
-        --b"101" srl/sra decided by func7
-        --b"110" or
-        --b"111" -and
+        when b"000" => --b"000" add/sub decided by func7
+          out_muxshamt <= c_MUXSHAMT_RS2;
+        when b"001" => --b"001" sll
+          out_muxshamt <= c_MUXSHAMT_SHAMT;
+        when b"010" => --b"010" slt
+          out_muxshamt <= c_MUXSHAMT_RS2;
+        when b"011" => --b"011" sltu
+          out_muxshamt <= c_MUXSHAMT_RS2;
+        when b"100" => --b"100" xor
+          out_muxshamt <= c_MUXSHAMT_RS2;
+        when b"101" => --b"101" srl/sra decided by func7
+          out_muxshamt <= c_MUXSHAMT_SHAMT;
+        when b"110" => --b"110" or
+          out_muxshamt <= c_MUXSHAMT_RS2;
+        when b"111" => --b"111" -and
+          out_muxshamt <= c_MUXSHAMT_RS2;
         out_alucntrl <= in_func7(in_func7'high - 1) & in_func3;
-        out_muxrs1 <=
-        out_muxrs2 <=
+        out_muxrs1 <= c_MUXRS1_REG;
+        out_muxrs2 <= c_MUXRS2_REG;
+        out_muxalu <= c_MUXALU_ALU;
+        out_regop <= c_REG_WE;
+        out_wmem <= c_MEM_WE;
+        out_muxpc <= c_MUXPC_PC4;
+        out_muxnop <= c_MUXNOP_OP;
     when b"01101" => --load upper immediate (lui) opcode
         out_alucntrl <= c_ALU_LUI
     when b"11000" => --branch opcode
