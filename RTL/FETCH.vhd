@@ -21,49 +21,40 @@ USE ieee.numeric_std.ALL;
 USE work.common.ALL;
 
 entity FETCH is
-  generic(g_REGISTER_WIDTH : integer);
-  port(in_clk    : in std_logic;
-       in_rst    : in std_logic;
-       in_jump    : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
-       in_jalr   : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
-       in_branch : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
-       in_muxpc  : in muxpc_t;
-       in_muxnop : in muxnop_t;
-
-       out_pc    : out std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
-       out_pc4   : out std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
-       out_instr : out std_logic_vector(g_REGISTER_WIDTH - 1 downto 0));
+  port(in_ext_to_all  : in ext_to_all_t;
+       in_de_to_fe    : in de_to_fe_t;
+       out_fe_to_de   : out de_to_fe_t);
 end entity;
 
 architecture behavior of ALU is
   --PC REGISTER
-  signal r_pc : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
+  signal r_pc : reglen_t;
   --INTERNAL WIREING
-  signal w_pc4 : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
-  signal w_pcmux : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
-  signal w_memout : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
+  signal w_pc4 : reglen_t;
+  signal w_pcmux : reglen_t;
+  signal w_memout : reglen_t;
 begin
   --STORE CURRENT PC VALUE IN REGISTER
-  p_PROGRAM_COUNTER : process(in_clk, in_rst)
+  p_PROGRAM_COUNTER : process(in_ext_to_all.clk, in_ext_to_all.rst)
   begin
-    if(rising_edge(in_clk)) then
+    if(rising_edge(in_ext_to_all.clk)) then
       r_pc <= w_pcmux;
     end if;
-    if(falling_edge(in_rst)) then
-        r_pc <= (others => '0');
+    if(falling_edge(in_ext_to_all.rst)) then
+      r_pc <= (others => '0');
     end if;
   end process;
   --INCREMENT PC VALUE
   w_pc4 <= std_logic_vector(unsigned(r_pc) + 4);
   --SELECT CURRENT PC VALUE
-  w_pcmux <= in_pc4 when in_muxpc = "00" else
-             in_jump when in_muxpc = "01" else
-             in_jalr when in_muxpc = "10" else
-             in_branch when in_muxpc = "11";
+  w_pcmux <= in_de_to_fe.pc4 when in_de_to_fe.muxpc = "00" else
+             in_de_to_fe.jump when in_de_to_fe.muxpc = "01" else
+             in_de_to_fe.jalr when in_de_to_fe.muxpc = "10" else
+             in_de_to_fe.branch when in_de_to_fe.muxpc = "11";
   --OUTPUT CURRENT PC VALUE AND INCREMENTED PC VALUE
-  out_pc <= r_pc;
-  out_pc4 <= w_pc4;
+  out_fe_to_de.pc <= r_pc;
+  out_fe_to_de.pc4 <= w_pc4;
   --FETCH NEXT INSTRUCTION FROM MEMORY OR STALL WITH NOP
-  out_instr <= w_memout when in_muxnop = '0' else
-               (others => '0') when in_muxnop = '1';
+  out_fe_to_de.instr <= w_memout when in_de_to_fe.muxnop = '0' else
+               (others => '0') when in_de_to_fe.muxnop = '1';
 end behavior;

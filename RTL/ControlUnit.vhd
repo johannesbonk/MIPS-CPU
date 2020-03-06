@@ -19,19 +19,8 @@ USE ieee.std_logic_1164.ALL;
 USE ieee.numeric_std.ALL;
 
 entity ControlUnit is
-  port(in_opcode  : in opcode_t;
-       in_func3   : in func3_t;
-       in_func7   : in func7_t;
-       out_alucntrl : out alucntrl_t;
-       out_regop    : out regop_t;
-       out_memop    : out memop_t;
-       out_muxrs1   : out muxrs1_t;
-       out_muxrs2   : out muxrs2_t;
-       out_muxshamt : out muxshamt_t;
-       out_muxalu   : out muxalu_t;
-       out_muxpc    : out muxpc_t;
-       out_muxnop   : out muxnop_t
-       );
+  port(in_de_to_cu  : in de_to_cu_t;
+       out_cu_to_de : out cu_to_de_t);
 end entity;
 
 architecture behavior of ControlUnit is

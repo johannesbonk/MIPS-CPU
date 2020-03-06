@@ -21,32 +21,27 @@ USE ieee.numeric_std.ALL;
 USE work.common.ALL;
 
 entity ALU is
-  generic(g_REGISTER_WIDTH : integer;
-          g_CONTROL_WIDTH : integer);
-  port(in_rs1   : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --input register 1
-       in_rs2   : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --input register 2
-       in_cntrl  : in alucntrl_t; --control inputs
-
-       out_res   : out std_logic_vector(g_REGISTER_WIDTH - 1 downto 0)); --result output
+  port(in_ex_to_alu : in ex_to_alu_t;
+       out_alu_to_ex : out alu_to_ex_t);
 end entity;
 
 architecture behavior of ALU is
-  signal w_slt : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
-  signal w_sltu : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
+  signal w_slt : reglen_t;
+  signal w_sltu : reglen_t;
 begin
 
-  p_SLT : process(in_rs1, in_rs2) is
+  p_SLT : process(in_ex_to_alu.op_a, in_ex_to_alu.op_b) is
   begin
-    if(signed(in_rs1) < signed(in_rs2)) then
+    if(signed(in_ex_to_alu.op_a) < signed(in_ex_to_alu.op_b)) then
       w_slt <= std_logic_vector(to_unsigned(1, w_slt'length));
     else
       w_slt <= std_logic_vector(to_unsigned(0, w_slt'length));
     end if;
   end process;
 
-  p_SLTU : process(in_rs1, in_rs2) is
+  p_SLTU : process(in_ex_to_alu.op_a, in_ex_to_alu.op_b) is
   begin
-    if(unsigned(in_rs1) < unsigned(in_rs2)) then
+    if(unsigned(in_ex_to_alu.op_a) < unsigned(in_ex_to_alu.op_b)) then
       w_sltu <= std_logic_vector(to_unsigned(1, w_sltu'length));
     else
       w_sltu <= std_logic_vector(to_unsigned(0, w_sltu'length));
@@ -54,15 +49,15 @@ begin
   end process;
 
   --multiplex required operation
-  out_res <= std_logic_vector(unsigned(in_rs1) + unsigned(in_rs2)) when in_cntrl = c_ALU_ADD else --addition
-             std_logic_vector(unsigned(in_rs1) - unsigned(in_rs2))  when in_cntrl = c_ALU_SUB else --subtraction
-             in_rs1 and in_rs2 when in_cntrl = c_ALU_AND else --ANDing
-             in_rs1 or in_rs2 when in_cntrl = c_ALU_OR else --ORing
-             in_rs1 xor in_rs2 when in_cntrl = c_ALU_XOR else --XORing
-             std_logic_vector(shift_left(unsigned(in_rs2), to_integer(unsigned(in_rs1)))) when in_cntrl = c_ALU_SLL else --shift left logically
-             std_logic_vector(shift_right(unsigned(in_rs2), to_integer(unsigned(in_rs1)))) when in_cntrl = c_ALU_SRL else --shift right logically
-             std_logic_vector(shift_right(signed(in_rs2), to_integer(unsigned(in_rs1)))) when in_cntrl = c_ALU_SRA else --shift right arithmetically
-             w_slt when in_cntrl = c_ALU_SLT else --set less than
-             w_sltu when in_cntrl = c_ALU_SLTU else --set less than unsigned
-             std_logic_vector(shift_left(unsigned(in_rs1), 16)) when in_cntrl = c_ALU_LUI; --load upper immediate
+  out_alu_to_ex.res <= std_logic_vector(unsigned(in_ex_to_alu.op_a) + unsigned(in_ex_to_alu.op_b)) when in_ex_to_alu.cntrl = c_ALU_ADD else --addition
+                       std_logic_vector(unsigned(in_ex_to_alu.op_a) - unsigned(in_ex_to_alu.op_b))  when in_ex_to_alu.cntrl = c_ALU_SUB else --subtraction
+                       in_ex_to_alu.op_a and in_ex_to_alu.op_b when in_ex_to_alu.cntrl = c_ALU_AND else --ANDing
+                       in_ex_to_alu.op_a or in_ex_to_alu.op_b when in_ex_to_alu.cntrl = c_ALU_OR else --ORing
+                       in_ex_to_alu.op_a xor in_ex_to_alu.op_b when in_ex_to_alu.cntrl = c_ALU_XOR else --XORing
+                       std_logic_vector(shift_left(unsigned(in_ex_to_alu.op_b), to_integer(unsigned(in_ex_to_alu.op_a)))) when in_ex_to_alu.cntrl = c_ALU_SLL else --shift left logically
+                       std_logic_vector(shift_right(unsigned(in_ex_to_alu.op_b), to_integer(unsigned(in_ex_to_alu.op_a)))) when in_ex_to_alu.cntrl = c_ALU_SRL else --shift right logically
+                       std_logic_vector(shift_right(signed(in_ex_to_alu.op_b), to_integer(unsigned(in_ex_to_alu.op_a)))) when in_ex_to_alu.cntrl = c_ALU_SRA else --shift right arithmetically
+                       w_slt when in_ex_to_alu.cntrl = c_ALU_SLT else --set less than
+                       w_sltu when in_ex_to_alu.cntrl = c_ALU_SLTU else --set less than unsigned
+                       std_logic_vector(shift_left(unsigned(in_ex_to_alu.op_a), 16)) when in_ex_to_alu.cntrl = c_ALU_LUI; --load upper immediate
 end behavior;

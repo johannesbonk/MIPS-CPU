@@ -21,36 +21,17 @@ USE ieee.numeric_std.ALL;
 entity EXECUTE is
   generic(g_REGISTER_WIDTH : integer := 32;
           g_CONTROL_WIDTH : integer := 4;
-          g_ADDRESS_WIDTH : integer := 32;
           g_REGISTER_ADDRESS_WIDTH : integer := 5);
-  port(in_clk       : in std_logic; --clock
-       in_clr       : in std_logic; --clear
-       --ALU OPERANDS
-       in_rs1       : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --operand a of ALU
-       in_rs2       : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --operand b of ALU
-       in_shfta     : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --shift operand for ALU input a
-       in_sgnexti   : in sgnexti_t;
-       in_sgnextsb  : in sgnextsb_t;
-       in_zeroextuj : in zeroextuj_t;
-       --OPERAND MULTIPLEXER
-       in_muxrs1    : in muxrs1_t;
-       in_muxrs2    : in muxrs2_t;
-       in_muxzero   : in muxzero_t;
-       in_muxalu    : in muxalu_t;
-       --UNIT CONTROL SIGNALS
-       in_alucntrl  : in alucntrl_t; --ALU control signals
-       in_regop     : in regop_t;
-       in_wmem     : in wmem_t;
-       --OPERAND OUTPUT
-       out_toreg    : out std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --value to save in register
-       out_alures   : out std_logic_vector(g_REGISTER_WIDTH - 1 downto 0)); --ALU result (also used for forwarding)
+  port(in_ext_to_all  : in ext_to_all_t;
+       in_de_to_ex    : in de_to_ex_t;
+       out_ex_to_de   : out ex_to_de_t);
 end entity;
 
 architecture behavior of EXECUTE is
   --PIPELINE REGISTER FOR OUTPUT SIGNALS OF INSTRUCTION DECODE PHASE
-  signal r_rs1      : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
-  signal r_shfta    : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
-  signal r_rs2      : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
+  signal r_rs1      : reglen_t;
+  signal r_shfta    : reglen_t;
+  signal r_rs2      : reglen_t;
   signal r_sgnexti  : sgnexti_t;
   signal r_sgnextsb : sgnextsb_t;
   signal r_zeroextuj : zeroextuj_t;
@@ -62,11 +43,11 @@ architecture behavior of EXECUTE is
   signal r_regop    : regop_t;
   signal r_memop    : memop_t;
 
-  signal w_muxbout  : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
-  signal w_aluop_a  : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
-  signal w_aluop_b  : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
-  signal w_alures   : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
-  signal w_memout   : std_logic_vector(g_REGISTER_WIDTH - 1 downto 0);
+  signal w_muxbout  : reglen_t;
+  signal w_aluop_a  : reglen_t;
+  signal w_aluop_b  : reglen_t;
+  signal w_alures   : reglen_t;
+  signal w_memout   : reglen_t;
 
   component BranchUnit is
     port(in_reg_a, in_reg_b : in std_logic;
