@@ -54,7 +54,7 @@ package common is
   end record de_to_regfile_t;
 
   type regfile_to_de_t is record
-    rs1 : reglen_t; --register source output 1 
+    rs1 : reglen_t; --register source output 1
     rs2 : reglen_t; --register source output 2
   end record regfile_to_de_t;
 
@@ -110,12 +110,12 @@ package common is
   end record ex_to_alu_t;
 
   subtype regop_t is std_logic; --determines register operation
-    constant c_REG_WE : regop_t := '0';
-    constant c_REG_WD : regop_t := '1';
+    constant c_REG_WD : regop_t := '0';
+    constant c_REG_WE : regop_t := '1';
 
   subtype memop_t is std_logic; --determines main memory operation
-    constant c_MEM_WE : memop_t := '0';
-    constant c_MEM_WD : memop_t := '1';
+    constant c_MEM_WD : memop_t := '0';
+    constant c_MEM_WE : memop_t := '1';
 
   subtype alucntrl_t is std_logic_vector(3 downto 0); --determines alu operation
     constant c_ALU_ADD  : alucntrl_t := "0000";
