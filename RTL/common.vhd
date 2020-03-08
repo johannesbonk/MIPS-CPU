@@ -76,6 +76,21 @@ package common is
     muxnop   : muxnop_t; --muxnop selection
   end record cu_to_de_t;
 
+  type de_to_btu_t is record
+    pc       : reglen_t; 
+    pc4      : reglen_t;
+    eq       : std_logic;
+    lt       : std_logic;
+    ltu      : std_logic;
+    opcode   : opcode_t;
+    displace : reglen_t;
+  end record de_to_btu_t;
+
+  type btu_to_de_t is record
+    pcnext : reglen_t;
+    muxnop : muxnop_t;
+  end record btu_to_de_t;
+
   type de_to_ex_t is record
     --ALU OPERANDS
     rs1       : reglen_t; --operand a of ALU
@@ -96,7 +111,10 @@ package common is
   type ex_to_de_t is record
     --OPERAND OUTPUT
     regop    : regop_t; --register operation
-    alures   : reglen_t); --ALU result, pc result or memory read (used for forwarding)
+    alures   : reglen_t; --ALU result, pc result or memory read (used for forwarding)
+    eq       : std_logic;
+    lt       : std_logic;
+    ltu      : std_logic;
   end record ex_to_de_t;
 
   type ex_to_alu_t is record
@@ -108,6 +126,17 @@ package common is
   type alu_to_ex_t is record
     res : reglen_t; --gives current alu result value
   end record ex_to_alu_t;
+
+  type ex_to_bu_t is record
+    rs1 : reglen_t;
+    rs2 : reglen_t;
+  end record;
+
+  type bu_to_ex_t is record
+    eq  : std_logic;
+    lt  : std_logic;
+    ltu : std_logic;
+  end record;
 
   subtype regop_t is std_logic; --determines register operation
     constant c_REG_WD : regop_t := '0';

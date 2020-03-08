@@ -18,14 +18,11 @@ LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
 USE ieee.numeric_std.ALL;
 
-entity BranchUnit is
-  generic(g_REGISTER_WIDTH : integer);
-  port(in_reg_a   : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --input register a
-       in_reg_b   : in std_logic_vector(g_REGISTER_WIDTH - 1 downto 0); --input register b
+USE work.common.ALL;
 
-       out_eq   : out std_logic; --equal output
-       out_lt   : out std_logic; --less than output
-       out_ltu  : out std_logic); --less than unsigned output
+entity BranchUnit is
+  port(in_ex_to_bu  : in ex_to_bu_t;
+       out_bu_to_ex : out bu_to_ex_t);
 end entity;
 
 architecture behavior of BranchUnit is
@@ -38,10 +35,10 @@ architecture behavior of BranchUnit is
     return v_res;
     end function or_reduce;
 begin
-  out_eq <= '1' when or_reduce(std_logic_vector(unsigned(in_reg_a) - unsigned(in_reg_b))) = '0' else
-            '0';
-  out_lt <= '1' when signed(in_reg_a) < signed(in_reg_b) else
-            '0';
-  out_ltu <= '1' when unsigned(in_reg_a) < unsigned(in_reg_b) else
-             '0';
+  out_bu_to_ex.eq <= '1' when or_reduce(std_logic_vector(unsigned(in_ex_to_bu.rs1) - unsigned(in_ex_to_bu.rs2))) = '0' else
+                     '0';
+  out_bu_to_ex.lt <= '1' when signed(in_ex_to_bu.rs1) < signed(in_ex_to_bu.rs2) else
+                     '0';
+  out_bu_to_ex.ltu <= '1' when unsigned(in_ex_to_bu.rs1) < unsigned(in_ex_to_bu.rs2) else
+                      '0';
 end behavior;
