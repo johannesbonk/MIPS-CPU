@@ -26,19 +26,11 @@ entity BranchUnit is
 end entity;
 
 architecture behavior of BranchUnit is
-  function or_reduce(vec_in : std_logic_vector) return std_logic is
-    variable v_res : std_logic := '0';
-    begin
-    for i in vec_in'range loop
-        v_res := v_res or vec_in(i);
-    end loop;
-    return v_res;
-    end function or_reduce;
 begin
-  out_bu_to_ex.eq <= '1' when or_reduce(std_logic_vector(unsigned(in_ex_to_bu.rs1) - unsigned(in_ex_to_bu.rs2))) = '0' else
+  out_bu_to_ex.eq <= '1' when in_ex_to_bu.op_a = in_ex_to_bu.op_b else
                      '0';
-  out_bu_to_ex.lt <= '1' when signed(in_ex_to_bu.rs1) < signed(in_ex_to_bu.rs2) else
+  out_bu_to_ex.lt <= '1' when signed(in_ex_to_bu.op_a) < signed(in_ex_to_bu.op_b) else
                      '0';
-  out_bu_to_ex.ltu <= '1' when unsigned(in_ex_to_bu.rs1) < unsigned(in_ex_to_bu.rs2) else
+  out_bu_to_ex.ltu <= '1' when unsigned(in_ex_to_bu.op_a) < unsigned(in_ex_to_bu.op_b) else
                       '0';
 end behavior;

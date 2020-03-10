@@ -25,6 +25,65 @@ package common is
   subtype func3_t is std_logic_vector(2 downto 0); --funtion3 block width
   subtype func7_t is std_logic_vector(6 downto 0); --function7 block width
 
+  subtype regop_t is std_logic; --determines register operation
+    constant c_REG_WD : regop_t := '0';
+    constant c_REG_WE : regop_t := '1';
+
+  subtype memop_t is std_logic; --determines main memory operation
+    constant c_MEM_WD : memop_t := '0';
+    constant c_MEM_WE : memop_t := '1';
+
+  subtype alucntrl_t is std_logic_vector(3 downto 0); --determines alu operation
+    constant c_ALU_ADD  : alucntrl_t := "0000";
+    constant c_ALU_SUB  : alucntrl_t := "1000";
+    constant c_ALU_AND  : alucntrl_t := "0111";
+    constant c_ALU_OR   : alucntrl_t := "0110";
+    constant c_ALU_XOR  : alucntrl_t := "0100";
+    constant c_ALU_LUI  : alucntrl_t := "1100";
+    constant c_ALU_SLL  : alucntrl_t := "0001";
+    constant c_ALU_SLT  : alucntrl_t := "0010";
+    constant c_ALU_SLTU : alucntrl_t := "1011";
+    constant c_ALU_SRL  : alucntrl_t := "0101";
+    constant c_ALU_SRA  : alucntrl_t := "1101";
+
+  subtype muxshamt_t is std_logic; --selects either register source 2 or shift amount
+    constant c_MUXSHAMT_RS2   : muxshamt_t := '0';
+    constant c_MUXSHAMT_SHAMT : muxshamt_t := '1';
+
+  subtype muxrs1_t is std_logic; --selects either register 1 or 0 value
+    constant c_MUXRS1_REG   : muxrs1_t := '0';
+    constant c_MUXRS1_ZERO  : muxrs1_t := '1';
+
+  subtype muxrs2_t is std_logic_vector(1 downto 0); --selects either register or sign/zero extended value
+    constant c_MUXRS2_REG   : muxrs2_t := "00"; --also used for shamt
+    constant c_MUXRS2_EXI   : muxrs2_t := "01";
+    constant c_MUXRS2_EXSB  : muxrs2_t := "10";
+    constant c_MUXRS2_ZEXUI : muxrs2_t := "11";
+
+   subtype muxalu_t is std_logic_vector(1 downto 0); --selects either alu or memory or pc output
+    constant c_MUXALU_ALU       : muxalu_t := "00";
+    constant c_MUXALU_MEM       : muxalu_t := "01";
+    constant c_MUXALU_PC        : muxalu_t := "10";
+    constant c_MUXRALU_INVALID  : muxalu_t := "11";
+
+   subtype muxpc_t is std_logic_vector(1 downto 0); --selects the input value of the program counter
+    constant c_MUXPC_PC4    : muxpc_t  := "00";
+    constant c_MUXPC_BRANCH : muxpc_t := "01";
+    constant c_MUXPC_JMP    : muxpc_t := "10";
+    constant c_MUXPC_JALR   : muxpc_t := "11";
+
+   subtype muxnop_t is std_logic; --selects either the current operation or a NOP
+    constant c_MUXNOP_OP  : muxnop_t := '0';
+    constant c_MUXNOP_NOP : muxnop_t := '1';
+
+   --subtype muxfwdrs1_t is std_logic_vector(); --selects either the register value or the source to forward
+    --constant c_MUXFWDRS1_RS1 : muxfwdrs1_t := '0';
+    --constant c_MUXFWDRS1_ALU : muxfwdrs1_t := '1';
+
+   --subtype muxfwdrs2_t is std_logic_vector(); --selects either the register value or the source to forward
+    --constant c_MUXFWDRS2_RS2 : muxfwdrs2_t := '0';
+    --constant c_MUXFWDRS2_ALU : muxfwdrs2_t := '1';
+
   type ext_to_all_t is record
     clk : std_logic; --clock
     clr : std_logic; --clear
@@ -77,7 +136,7 @@ package common is
   end record cu_to_de_t;
 
   type de_to_btu_t is record
-    pc       : reglen_t; 
+    pc       : reglen_t;
     pc4      : reglen_t;
     eq       : std_logic;
     lt       : std_logic;
@@ -95,9 +154,9 @@ package common is
     --ALU OPERANDS
     rs1       : reglen_t; --operand a of ALU
     rs2       : reglen_t; --operand b of ALU
-    sgnexti   : sgnexti_t; --sign extend of i instruction format
-    sgnextsb  : sgnextsb_t; --sign extend of s/b instruction format
-    zeroextuj : zeroextuj_t; --zero extend of u/j instruction format
+    sgnexti   : reglen_t; --sign extend of i instruction format
+    sgnextsb  : reglen_t; --sign extend of s/b instruction format
+    zeroextuj : reglen_t; --zero extend of u/j instruction format
     --OPERAND MULTIPLEXER
     muxrs1     : muxrs1_t; --mux rs1 selection
     muxrs2     : muxrs2_t; --mux rs2 selection
@@ -125,11 +184,11 @@ package common is
 
   type alu_to_ex_t is record
     res : reglen_t; --gives current alu result value
-  end record ex_to_alu_t;
+  end record alu_to_ex_t;
 
   type ex_to_bu_t is record
-    rs1 : reglen_t;
-    rs2 : reglen_t;
+    op_a : reglen_t;
+    op_b : reglen_t;
   end record;
 
   type bu_to_ex_t is record
@@ -137,63 +196,4 @@ package common is
     lt  : std_logic;
     ltu : std_logic;
   end record;
-
-  subtype regop_t is std_logic; --determines register operation
-    constant c_REG_WD : regop_t := '0';
-    constant c_REG_WE : regop_t := '1';
-
-  subtype memop_t is std_logic; --determines main memory operation
-    constant c_MEM_WD : memop_t := '0';
-    constant c_MEM_WE : memop_t := '1';
-
-  subtype alucntrl_t is std_logic_vector(3 downto 0); --determines alu operation
-    constant c_ALU_ADD  : alucntrl_t := "0000";
-    constant c_ALU_SUB  : alucntrl_t := "1000";
-    constant c_ALU_AND  : alucntrl_t := "0111";
-    constant c_ALU_OR   : alucntrl_t := "0110";
-    constant c_ALU_XOR  : alucntrl_t := "0100";
-    constant c_ALU_LUI  : alucntrl_t := "1100";
-    constant c_ALU_SLL  : alucntrl_t := "0001";
-    constant c_ALU_SLT  : alucntrl_t := "0010";
-    constant c_ALU_SLTU : alucntrl_t := "1011";
-    constant c_ALU_SRL  : alucntrl_t := "0101";
-    constant c_ALU_SRA  : alucntrl_t := "1101";
-
-  subtype muxshamt_t is std_logic; --selects either register source 2 or shift amount
-    constant c_MUXSHAMT_RS2   : muxshamt_t := '0';
-    constant c_MUXSHAMT_SHAMT : muxshamt_t := '1';
-
-  subtype muxrs1_t is std_logic; --selects either register 1 or 0 value
-    constant c_MUXRS1_REG   : muxrs1_t := '0';
-    constant c_MUXRS1_ZERO  : muxrs1_t := '1';
-
-  subtype muxrs2_t is std_logic_vector(1 downto 0); --selects either register or sign/zero extended value
-    constant c_MUXRS2_REG   : muxrs2_t := "00"; --also used for shamt
-    constant c_MUXRS2_EXI   : muxrs2_t := "01";
-    constant c_MUXRS2_EXSB  : muxrs2_t := "10";
-    constant c_MUXRS2_ZEXUI : muxrs2_t := "11";
-
-   subtype muxalu_t is std_logic_vector(1 downto 0); --selects either alu or memory or pc output
-    constant c_MUXALU_ALU       : muxalu_t := "00";
-    constant c_MUXALU_MEM       : muxalu_t := "01";
-    constant c_MUXALU_PC        : muxalu_t := "10";
-    constant c_MUXRALU_INVALID  : muxalu_t := "11";
-
-   subtype muxpc_t is std_logic_vector(1 downto 0); --selects the input value of the program counter
-    constant c_MUXPC_PC4    : muxpc_t  := "00";
-    constant c_MUXPC_BRANCH : muxpc_t := "01";
-    constant c_MUXPC_JMP    : muxpc_t := "10";
-    constant c_MUXPC_JALR   : muxpc_t := "11";
-
-   subtype muxnop_t is std_logic; --selects either the current operation or a NOP
-    constant c_MUXNOP_OP  : muxnop_t := '0';
-    constant c_MUXNOP_NOP : muxnop_t := '1';
-
-   subtype muxfwdrs1_t is std_logic_vector(); --selects either the register value or the source to forward
-    constant c_MUXFWDRS1_RS1 : muxfwdrs1_t := '0';
-    constant c_MUXFWDRS1_ALU : muxfwdrs1_t := '1';
-
-   subtype muxfwdrs2_t is std_logic_vector(); --selects either the register value or the source to forward
-    constant c_MUXFWDRS2_RS2 : muxfwdrs2_t := '0';
-    constant c_MUXFWDRS2_ALU : muxfwdrs2_t := '1';
 end package common;

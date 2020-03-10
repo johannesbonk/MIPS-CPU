@@ -1,3 +1,19 @@
+-- This module determines the next program counter if a branch occurs, dependent on the result of the BranchUnit
+-- Copyright (C) 2020  Johannes Bonk
+--
+-- This program is free software: you can redistribute it and/or modify
+-- it under the terms of the GNU Lesser General Public License as published by
+-- the Free Software Foundation, either version 3 of the License, or
+-- (at your option) any later version.
+--
+-- This program is distributed in the hope that it will be useful,
+-- but WITHOUT ANY WARRANTY; without even the implied warranty of
+-- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-- GNU Lesser General Public License for more details.
+--
+-- You should have received a copy of the GNU Lesser General Public License
+-- along with this program.  If not, see http://www.gnu.org/licenses
+
 LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
 USE ieee.numeric_std.ALL;
@@ -15,7 +31,7 @@ architecture behavior of BranchTargetUnit is
   signal w_pcbranch : reglen_t;
   signal w_pcnobranch : reglen_t;
 begin
-  w_pcbranch <= std_logic_vector(unsigned(in_de_to_btu.pc) + unsigned(in_de_to_btu.displace)); 
+  w_pcbranch <= std_logic_vector(unsigned(in_de_to_btu.pc) + unsigned(in_de_to_btu.displace));
   w_pcnobranch <= in_de_to_btu.pc4;
   p_SET_NOP: process(in_ext_to_all.clk) is
     if(in_de_to_btu.opcode = b"11000") then

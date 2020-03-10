@@ -19,9 +19,6 @@ USE ieee.std_logic_1164.ALL;
 USE ieee.numeric_std.ALL;
 
 entity EXECUTE is
-  generic(g_REGISTER_WIDTH : integer := 32;
-          g_CONTROL_WIDTH : integer := 4;
-          g_REGISTER_ADDRESS_WIDTH : integer := 5);
   port(in_ext_to_all  : in ext_to_all_t;
        in_de_to_ex    : in de_to_ex_t;
        out_ex_to_de   : out ex_to_de_t);
@@ -30,7 +27,6 @@ end entity;
 architecture behavior of EXECUTE is
   --PIPELINE REGISTER FOR OUTPUT SIGNALS OF INSTRUCTION DECODE PHASE
   signal r_rs1      : reglen_t;
-  signal r_shfta    : reglen_t;
   signal r_rs2      : reglen_t;
   signal r_sgnexti  : sgnexti_t;
   signal r_sgnextsb : sgnextsb_t;
@@ -38,7 +34,6 @@ architecture behavior of EXECUTE is
   signal r_muxrs1   : muxrs1_t;
   signal r_muxrs2   : muxrs2_t;
   signal r_muxalu   : muxalu_t;
-  signal r_muxzero  : muxzero_t;
   signal r_alucntrl : alucntrl_t;
   signal r_regop    : regop_t;
   signal r_memop    : memop_t;
@@ -49,14 +44,14 @@ architecture behavior of EXECUTE is
   signal w_alures   : reglen_t;
   signal w_memout   : reglen_t;
 
-  component BranchUnit is
-    port(in_reg_a, in_reg_b : in std_logic;
-         out_eq, out_lt, out_ltu : out std_logic);
+  component ALU is
+    port(in_ex_to_alu.op_a, in_ex_to_alu.op_b, in_ex_to_alu.cntrl : in std_logic;
+         out_alu_to_ex.res : out std_logic);
   end component;
 
-  component ALU is
-    port(in_op_a, in_op_b, in_cntrl : in std_logic;
-         out_res : out std_logic);
+  component BranchUnit is
+    port(in_ex_to_bu.op_a, in_ex_to_bu.op_b : in std_logic;
+         out_bu_to_ex.eq, out_bu_to_ex.lt, out_bu_to_ex.ltu : out std_logic);
   end component;
 
 begin
@@ -64,23 +59,20 @@ begin
   p_PIPELINE_REGISTER: process(in_clk)
   begin
     if(rising_edge(in_clk)) then
-      r_rs1 <= in_rs1;
-      r_shfta <= in_shfta;
-      r_rs2 <= in_rs2;
-      r_sgnexti  <= in_sgnexti;
-      r_sgnextsb <= in_sgnextsb;
-      r_zeroextuj <= in_zeroextuj;
-      r_muxrs1 <= in_muxrs1;
-      r_muxrs2 <= in_muxrs2;
-      r_muxalu <= in_muxalu;
-      r_muxzero in_muxzero;
-      r_alucntrl <= in_alucntrl;
-      r_regop <= in_regop;
-      r_memop <= in_memop;
+      r_rs1 <= in_de_to_ex.rs1;
+      r_rs2 <= in_de_to_ex.rs2;
+      r_sgnexti  <= in_de_to_ex.sgnexti;
+      r_sgnextsb <= in_de_to_ex.sgnextsb;
+      r_zeroextuj <= in_de_to_ex.zeroextuj;
+      r_muxrs1 <= in_de_to_ex.muxrs1;
+      r_muxrs2 <= in_de_to_ex.muxrs2;
+      r_muxalu <= in_de_to_ex.muxalu;
+      r_alucntrl <= in_de_to_ex.alucntrl;
+      r_regop <= in_de_to_ex.regop;
+      r_memop <= in_de_to_ex.memop;
     end if;
     if(falling_edge(in_clr)) then
       r_rs1 <= (others => '0');
-      r_shfta <= (others => '0');
       r_rs2 <= (others => '0');
       r_sgnexti  <= (others => '0');
       r_sgnextsb <= (others => '0');
@@ -88,34 +80,37 @@ begin
       r_muxrs1 <= '0';
       r_muxrs2 <= (others => '0');
       r_muxalu <= (others => '0');
-      r_muxzero <= '0';
       r_alucntrl <= (others => '0');
       r_regop <= (others => '0');
       r_memop <= (others => '0');
     end if;
   end process;
   --MULTIPLEX ALU OPERAND A
-   w_aluop_a <= r_rs1 when r_muxrs1 = '0' else
-                r_shfta when r_muxrs1 = '1';
+   w_aluop_a <= r_rs1 when r_muxrs1 = c_MUXRS1_REG else
+                (others => '0') when r_muxrs1 = c_MUXRS1_ZERO;
   --MULTIPLEX ALU OPERAND B
-   w_muxbout <= r_rs2 when r_muxrs2 = "00" else
-                r_sgnexti when r_muxrs2 = "01" else
-                r_sgnextsb when r_muxrs2 = "10" else
-                r_zeroextuj when r_muxrs2 = "11";
-   w_aluop_b <= w_muxbout when  r_muxzero = '0' else
-                (others => '0') when r_muxzero = '1';
+   w_aluop_b <= r_rs2 when r_muxrs2 = c_MUXRS2_REG else
+                r_sgnexti when r_muxrs2 = c_MUXRS2_EXI else
+                r_sgnextsb when r_muxrs2 = c_MUXRS2_EXSB else
+                r_zeroextuj when r_muxrs2 = c_MUXRS2_ZEXUI;
   --ALU CONNECTION
   alu1: entity work.ALU(behavior) -- instance of ALU.vhd
-  generic map(g_REGISTER_WIDTH => g_REGISTER_WIDTH,
-              g_CONTROL_WIDTH => g_CONTROL_WIDTH)
-  port map (in_op_a => w_aluop_a,
-            in_op_b => w_aluop_b,
-            in_cntrl => r_alucntrl,
-            out_res => w_alures);
-  --MULTIPLEX ALU OUTPUT
-  out_alures <= w_alures;
-  --SET DESTINATION REGISTER
-  out_toreg <= w_alures when r_muxalu = "00" else
-              w_memout when r_muxalu = "01" else
-              r_pc4 when r_muxalu = "10";
+  port map (in_ex_to_alu.op_a => w_aluop_a,
+            in_ex_to_alu.op_b => w_aluop_b,
+            in_ex_to_alu.cntrl => r_alucntrl,
+            out_alu_to_ex.res => w_alures);
+  --************EXECUTION PHASE OUT TO DECODE PHASE******************
+  --Branch Unit CONNECTION
+  bu1: entity work.BranchUnit(behavior) -- instance of BranchUnit.vhd
+  port map (in_ex_to_bu.op_a => w_aluop_a,
+            in_ex_to_bu.op_b => w_aluop_b,
+            out_bu_to_ex.eq => out_ex_to_de.eq, --direct connection to execution stage output
+            out_bu_to_ex.lt => out_ex_to_de.lt, --direct connection to execution stage output
+            out_bu_to_ex.ltu => out_ex_to_de.ltu); --direct connection to execution stage output
+  --REGOP PASS THROUGH
+  out_ex_to_de.regop <= r_regop;
+  --MULTIPLEX ALU/MEMORY OUTPUT
+  out_ex_to_de.alures <= w_alures when r_muxalu = c_MUXALU_ALU else
+                         w_memout when r_muxalu = c_MUXALU_MEM else
+                         r_pc4 when r_muxalu = c_MUXALU_PC;
 end behavior;
