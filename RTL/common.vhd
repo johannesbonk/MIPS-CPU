@@ -39,7 +39,6 @@ package common is
     constant c_ALU_AND  : alucntrl_t := "0111";
     constant c_ALU_OR   : alucntrl_t := "0110";
     constant c_ALU_XOR  : alucntrl_t := "0100";
-    constant c_ALU_LUI  : alucntrl_t := "1100";
     constant c_ALU_SLL  : alucntrl_t := "0001";
     constant c_ALU_SLT  : alucntrl_t := "0010";
     constant c_ALU_SLTU : alucntrl_t := "1011";

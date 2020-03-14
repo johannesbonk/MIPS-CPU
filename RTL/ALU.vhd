@@ -54,10 +54,9 @@ begin
                        in_ex_to_alu.op_a and in_ex_to_alu.op_b when in_ex_to_alu.cntrl = c_ALU_AND else --ANDing
                        in_ex_to_alu.op_a or in_ex_to_alu.op_b when in_ex_to_alu.cntrl = c_ALU_OR else --ORing
                        in_ex_to_alu.op_a xor in_ex_to_alu.op_b when in_ex_to_alu.cntrl = c_ALU_XOR else --XORing
-                       std_logic_vector(shift_left(unsigned(in_ex_to_alu.op_b), to_integer(unsigned(in_ex_to_alu.op_a)))) when in_ex_to_alu.cntrl = c_ALU_SLL else --shift left logically
-                       std_logic_vector(shift_right(unsigned(in_ex_to_alu.op_b), to_integer(unsigned(in_ex_to_alu.op_a)))) when in_ex_to_alu.cntrl = c_ALU_SRL else --shift right logically
-                       std_logic_vector(shift_right(signed(in_ex_to_alu.op_b), to_integer(unsigned(in_ex_to_alu.op_a)))) when in_ex_to_alu.cntrl = c_ALU_SRA else --shift right arithmetically
+                       std_logic_vector(shift_left(unsigned(in_ex_to_alu.op_a), to_integer(unsigned(in_ex_to_alu.op_b)))) when in_ex_to_alu.cntrl = c_ALU_SLL else --shift left logically
+                       std_logic_vector(shift_right(unsigned(in_ex_to_alu.op_a), to_integer(unsigned(in_ex_to_alu.op_b)))) when in_ex_to_alu.cntrl = c_ALU_SRL else --shift right logically
+                       std_logic_vector(shift_right(signed(in_ex_to_alu.op_a), to_integer(unsigned(in_ex_to_alu.op_b)))) when in_ex_to_alu.cntrl = c_ALU_SRA else --shift right arithmetically
                        w_slt when in_ex_to_alu.cntrl = c_ALU_SLT else --set less than
-                       w_sltu when in_ex_to_alu.cntrl = c_ALU_SLTU else --set less than unsigned
-                       std_logic_vector(shift_left(unsigned(in_ex_to_alu.op_a), 16)) when in_ex_to_alu.cntrl = c_ALU_LUI; --load upper immediate
+                       w_sltu when in_ex_to_alu.cntrl = c_ALU_SLTU; --set less than unsigned
 end behavior;
