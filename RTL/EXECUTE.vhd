@@ -45,20 +45,26 @@ architecture behavior of EXECUTE is
   signal w_memout   : reglen_t;
 
   component ALU is
-    port(in_ex_to_alu.op_a, in_ex_to_alu.op_b, in_ex_to_alu.cntrl : in std_logic;
-         out_alu_to_ex.res : out std_logic);
-  end component;
+    port(in_ex_to_alu  : in ex_to_alu_t;
+         out_alu_to_ex : out alu_to_ex_t);
+  end component ALU;
 
   component BranchUnit is
-    port(in_ex_to_bu.op_a, in_ex_to_bu.op_b : in std_logic;
-         out_bu_to_ex.eq, out_bu_to_ex.lt, out_bu_to_ex.ltu : out std_logic);
-  end component;
+    port(in_ex_to_bu  : in ex_to_bu_t,
+         out_bu_to_ex : out bu_to_ex_t);
+  end component BranchUnit;
+
+  component DataMemory is
+  port(in_ext_to_all : in ext_to_all_t,
+      in_ex_to_dmem  : in ex_to_dmem_t,
+      out_dmem_to_ex : out dmem_to_ex_t);
+  end component DataMemory;
 
 begin
   --LOAD PIPELINE REGISTER
-  p_PIPELINE_REGISTER: process(in_clk)
+  p_PIPELINE_REGISTER: process(in_ext_to_all.clk)
   begin
-    if(rising_edge(in_clk)) then
+    if(rising_edge(in_ext_to_all.clk)) then
       r_rs1 <= in_de_to_ex.rs1;
       r_rs2 <= in_de_to_ex.rs2;
       r_sgnexti  <= in_de_to_ex.sgnexti;
@@ -71,7 +77,7 @@ begin
       r_regop <= in_de_to_ex.regop;
       r_memop <= in_de_to_ex.memop;
     end if;
-    if(falling_edge(in_clr)) then
+    if(falling_edge(in_ext_to_all.clr)) then
       r_rs1 <= (others => '0');
       r_rs2 <= (others => '0');
       r_sgnexti  <= (others => '0');
@@ -99,14 +105,22 @@ begin
             in_ex_to_alu.op_b => w_aluop_b,
             in_ex_to_alu.cntrl => r_alucntrl,
             out_alu_to_ex.res => w_alures);
-  --************EXECUTION PHASE OUT TO DECODE PHASE******************
   --Branch Unit CONNECTION
   bu1: entity work.BranchUnit(behavior) -- instance of BranchUnit.vhd
-  port map (in_ex_to_bu.op_a => w_aluop_a,
-            in_ex_to_bu.op_b => w_aluop_b,
+  port map (in_ex_to_bu.op_a => r_rs1,
+            in_ex_to_bu.op_b => r_rs2,
             out_bu_to_ex.eq => out_ex_to_de.eq, --direct connection to execution stage output
             out_bu_to_ex.lt => out_ex_to_de.lt, --direct connection to execution stage output
             out_bu_to_ex.ltu => out_ex_to_de.ltu); --direct connection to execution stage output
+  --Data Memory connection
+  dmem1: entity work.DataMemory(behavior) -- instance of DataMemory.vhd
+  port map (in_ext_to_all.clk => in_ext_to_all.clk,
+            in_ext_to_all.clr => in_ext_to_all.clr,
+            in_ex_to_dmem.data => r_rs2,
+            in_ex_to_dmem.addr => w_alures,
+            in_ex_to_dmem.memop => r_memop,
+            out_dmem_to_ex.data => w_memout);
+  --************EXECUTION PHASE OUT TO DECODE PHASE******************
   --REGOP PASS THROUGH
   out_ex_to_de.regop <= r_regop;
   --MULTIPLEX ALU/MEMORY OUTPUT

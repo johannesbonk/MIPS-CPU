@@ -188,11 +188,21 @@ package common is
   type ex_to_bu_t is record
     op_a : reglen_t;
     op_b : reglen_t;
-  end record;
+  end record ex_to_bu_t;
 
   type bu_to_ex_t is record
     eq  : std_logic;
     lt  : std_logic;
     ltu : std_logic;
-  end record;
+  end record bu_to_ex_t;
+
+  type ex_to_dmem_t is record
+    memop : memop_t;
+    addr  : reglen_t;
+    data  : reglen_t;
+  end record ex_to_dmem_t;
+
+  type dmem_to_ex_t is record
+    data  : reglen_t;
+  end record dmem_to_ex_t;
 end package common;
