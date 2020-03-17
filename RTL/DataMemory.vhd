@@ -31,7 +31,7 @@ architecture behavior of DataMemory is
   type ram_t is array (0 to 63) of std_logic_vector(reglen_t'length - 1 downto 0);
   signal r_data_ram : ram_t := (others => (others => '0'));
   begin
-  p_WRITE_PROCESS: process (in_ext_to_all.clk)
+  p_WRITE_PROCESS: process (in_ext_to_all.clk, in_ext_to_all.clr)
   begin
     if (rising_edge(in_ext_to_all.clk)) then
       if (in_ex_to_dmem.memop = c_MEM_WE) then

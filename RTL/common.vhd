@@ -45,10 +45,6 @@ package common is
     constant c_ALU_SRL  : alucntrl_t := "0101";
     constant c_ALU_SRA  : alucntrl_t := "1101";
 
-  subtype muxshamt_t is std_logic; --selects either register source 2 or shift amount
-    constant c_MUXSHAMT_RS2   : muxshamt_t := '0';
-    constant c_MUXSHAMT_SHAMT : muxshamt_t := '1';
-
   subtype muxrs1_t is std_logic; --selects either register 1 or 0 value
     constant c_MUXRS1_REG   : muxrs1_t := '0';
     constant c_MUXRS1_ZERO  : muxrs1_t := '1';
@@ -88,6 +84,14 @@ package common is
     clr : std_logic; --clear
   end record ext_to_all_t;
 
+  type fe_to_imem_t is record
+    addr : reglen_t;
+  end record fe_to_imem_t;
+
+  type imem_to_fe_t is record
+    data : reglen_t;
+  end record;
+
   type fe_to_de_t is record
     pc    : reglen_t; --pc
     pc4   : reglen_t; --pc + 4
@@ -123,15 +127,16 @@ package common is
   end record de_to_cu_t;
 
   type cu_to_de_t is record
-    alucntrl : alucntrl_t; --alu control
-    regop    : regop_t; --register operation
-    memop    : memop_t; --memory operation
-    muxshamt : muxshamt_t; --multiplexes shift amount
-    muxrs1   : muxrs1_t; --muxrs1 selection
-    muxrs2   : muxrs2_t; --muxrs2 selection
-    muxalu   : muxalu_t; --muxalu selection
-    muxpc    : muxpc_t; --muxpc selection
-    muxnop   : muxnop_t; --muxnop selection
+    alucntrl  : alucntrl_t; --alu control
+    regop     : regop_t; --register operation
+    memop     : memop_t; --memory operation
+    --muxfwdrs1 : muxfwdrs1_t; --forward value of rs1
+    --muxfwdrs2 : muxfwdrs2_t; --forward value of rs2
+    muxrs1    : muxrs1_t; --muxrs1 selection
+    muxrs2    : muxrs2_t; --muxrs2 selection
+    muxalu    : muxalu_t; --muxalu selection
+    muxpc     : muxpc_t; --muxpc selection
+    muxnop    : muxnop_t; --muxnop selection
   end record cu_to_de_t;
 
   type de_to_btu_t is record
