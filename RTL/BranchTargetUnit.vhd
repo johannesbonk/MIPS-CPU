@@ -28,11 +28,23 @@ end BranchTargetUnit;
 
 
 architecture behavior of BranchTargetUnit is
+  signal w_wq : std_logic; 
+  signal w_lt : std_logic; 
+  signal w_ltu : std_logic; 
   signal w_pcbranch : reglen_t;
   signal w_pcnobranch : reglen_t;
 begin
+  -- compute branch outcome
+  w_eq <= '1' when in_de_to_btu.rs1 = in_de_to_btu.rs2 else
+          '0';
+  w_lt <= '1' when signed(in_de_to_btu.rs1) < signed(in_de_to_btu.rs2) else
+          '0';
+  w_ltu <= '1' when unsigned(in_de_to_btu.rs1) < unsigned(in_de_to_btu.rs2) else
+           '0';
+  -- compute branch address
   w_pcbranch <= std_logic_vector(unsigned(in_de_to_btu.pc) + unsigned(in_de_to_btu.displace));
   w_pcnobranch <= in_de_to_btu.pc4;
+
   p_SET_NOP: process(in_ext_to_all.clk) is
     if(in_de_to_btu.opcode = b"11000") then
       out_btu_to_de.muxnop <= c_MUXNOP_NOP;
