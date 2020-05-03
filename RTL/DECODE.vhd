@@ -35,32 +35,56 @@ architecture behavior of DECODE is
   signal r_pc        : reglen_t;
   signal r_pc4       : reglen_t;
   --COMPONENT INTERFACES (internal)
-  signal w_de_to_cu  : de_to_cu_t; 
-  signal w_cu_to_de  : cu_to_de_t; 
-  signal w_de_to_fwd : de_to_fwd_t; 
-  signal w_fwd_to_de : fwd_to_de_t; 
+  signal w_de_to_cu      : de_to_cu_t; 
+  signal w_cu_to_de      : cu_to_de_t; 
+  signal w_de_to_fwd     : de_to_fwd_t; 
+  signal w_fwd_to_de     : fwd_to_de_t; 
+  signal w_de_to_regfile : de_to_regfile_t; 
+  signal w_regfile_to_de : regfile_to_de_t; 
   --COMPONENT INTERFACES (external)
   signal w_fe_to_de : fe_to_de_t; 
   signal w_de_to_fe : de_to_fe_t; 
   signal w_de_to_ex : de_to_ex_t; 
   signal w_ex_to_de : ex_to_de_t; 
   --INTERNAL WIREING
-  signal w_opcode    : opcode_t;
-  signal w_func3     : func3_t;
-  signal w_func7     : func7_t;
-  signal w_rs1       : reglen_t;
-  signal w_rs2       : reglen_t;
-  signal w_rd        : regadr_t;
-  signal w_imm       : reglen_t;
-  signal w_fwdrs1    : reglen_t; 
-  signal w_fwdrs2    : reglen_t; 
+  signal w_opcode  : opcode_t;
+  signal w_func3   : func3_t;
+  signal w_func7   : func7_t;
+  signal w_rs1     : reglen_t;
+  signal w_rs2     : reglen_t;
+  signal w_rs1adr  : regadr_t;
+  signal w_rs2adr  : regadr_t;
+  signal w_rd      : regadr_t;
+  signal w_imm     : reglen_t;
+  signal w_fwdrs1  : reglen_t; 
+  signal w_fwdrs2  : reglen_t; 
+  signal w_jaladr  : reglen_t; 
+  signal w_jalradr : reglen_t; 
+  signal w_branchadr : reglen_t; 
+
   -- INPUT WIREING
+  -- FROM EXECUTE STAGE
   signal w_exres       : reglen_t; 
   signal w_exregop     : regop_t; 
   signal w_exrd        : regadr_t; 
   signal w_exbranch    : boolean; 
   signal w_exbranchadr : reglen_t; 
-
+  -- FROM CONTROL UNIT
+  signal w_cumuxrs1 : muxrs1_t; 
+  signal w_cumuxrs2 : muxrs2_t; 
+  signal w_cualucntrl : alucntrl_t; 
+  signal w_cumuxalu : muxalu_t; 
+  signal w_curegop : regop_t; 
+  signal w_cumemop : memop_t; 
+  signal w_cumuxpc : muxpc_t; 
+  signal w_cumuxnop : muxnop_t; 
+  signal w_cubranch : branch_t; 
+  -- FORWARDING UNIT
+  signal w_fwdmuxfwdrs1 : muxfwdrs1_t; 
+  signal w_fwdmuxfwdrs2 : muxfwdrs2_t;  
+  -- FROM REGFILE 
+  signal w_regfilers1 : reglen_t; 
+  signal w_regfilers2 : reglen_t;
   component ControlUnit is
     port(in_de_to_cu  : de_to_cu_t;
          out_cu_to_de : cu_to_de_t);
@@ -75,13 +99,18 @@ begin
  ----------------------------------------------------
  --|             INITIALIZE COMPONENTS              |
  ---------------------------------------------------- 
- control_unit: entity work.ControlUnit(behavior) -- instance of ControlUnit.vhd
+ control_unit: entity work.ControlUnit(logic) -- instance of ControlUnit.vhd
  port map (in_de_to_cu => w_de_to_cu,
            out_cu_to_de => w_cu_to_de);
 
-  forwarding_unit: entity work.ForwardingUnit(behavior) -- instance of ForwardingUnit.vhd
+  forwarding_unit: entity work.ForwardingUnit(logic) -- instance of ForwardingUnit.vhd
   port map(in_de_to_fwd => w_de_to_fwd,
            out_fwd_to_de => w_fwd_to_de); 
+  
+  register_file: entity work.RegisterFile(RTL) -- instance of RegisterFile.vhd
+  port map(in_ext_to_all => in_ext_to_all,
+           in_de_to_regfile => w_de_to_regfile,
+           out_regfile_to_de => w_regfile_to_de); 
  ----------------------------------------------------
  --|            ASSIGN INPUTS (external)            |
  ---------------------------------------------------- 
@@ -97,31 +126,33 @@ begin
  --|            ASSIGN INPUTS (internal)            |
  ---------------------------------------------------- 
   -- CONTROL UNIT
-  w_muxrs1 <= w_cu_to_de.muxrs1; 
-  w_muxrs2 <= w_cu_to_de.muxrs2; 
-  w_alucntrl <= w_cu_to_de.alucntrl; 
-  w_muxalu <= w_cu_to_de.muxalu; 
-  w_regop <= w_cu_to_de.regop; 
-  w_memop <= w_cu_to_de.memop; 
-  w_muxpc <= w_cu_to_de.muxpc; 
-  w_muxnop <= w_cu_to_de.muxnop;
-  w_branch <= w_cu_to_de.branch;  
+  w_cumuxrs1 <= w_cu_to_de.muxrs1; 
+  w_cumuxrs2 <= w_cu_to_de.muxrs2; 
+  w_cualucntrl <= w_cu_to_de.alucntrl; 
+  w_cumuxalu <= w_cu_to_de.muxalu; 
+  w_curegop <= w_cu_to_de.regop; 
+  w_cumemop <= w_cu_to_de.memop; 
+  w_cumuxpc <= w_cu_to_de.muxpc; 
+  w_cumuxnop <= w_cu_to_de.muxnop;
+  w_cubranch <= w_cu_to_de.branch;  
   -- FORWARDING UNIT
-  w_muxfwdrs1 <= w_fwd_to_de.muxfwdrs1; 
-  w_muxfwdrs2 <= w_fwd_to_de.muxfwdrs2; 
-
+  w_fwdmuxfwdrs1 <= w_fwd_to_de.muxfwdrs1; 
+  w_fwdmuxfwdrs2 <= w_fwd_to_de.muxfwdrs2; 
+  -- REGFILE 
+  w_rs1 <= w_regfile_to_de.rs1; 
+  w_rs2 <= w_regfile_to_de.rs2; 
   ----------------------------------------------------
   --|              PIPELINE REGISTERS                |
   ---------------------------------------------------- 
   --SAVE THE OUTPUT SIGNALS OF THE FETCH STAGE
-  p_PIPELINE_REGISTER : process(in_ext_to_all.clk, in_ext_to_all.rst)
+  p_PIPELINE_REGISTER : process(in_ext_to_all.clk, in_ext_to_all.clr)
   begin
     if(rising_edge(in_ext_to_all.clk)) then
       r_instr <= in_fe_to_de.instr;
       r_pc <= in_fe_to_de.pc;
       r_pc4 <= in_fe_to_de.pc4;
     end if;
-    if(falling_edge(in_ext_to_all.rst)) then -- clear pipeline register on reset
+    if(falling_edge(in_ext_to_all.clr)) then -- clear pipeline register on reset
       r_instr <= (others => '0');
       r_pc <= (others => '0');
       r_pc4 <= (others => '0');
@@ -135,9 +166,9 @@ begin
   --EVALUUATE FUNCTION
   w_func3 <= r_instr(14 downto 12);
   w_func7 <= r_instr(31 downto 25);
-  --EVALUATE SOURCE REGISTERS
-  w_rs1 <= r_instr(19 downto 15);
-  w_rs2 <= in_fe_to_de.instr(24 downto 20);
+  --EVALUATE SOURCE REGISTER ADRESS
+  w_rs1adr <= r_instr(19 downto 15);
+  w_rs2adr <= in_fe_to_de.instr(24 downto 20);
   --EVALUATE DESTINATION REGISTER / SHIFT AMOUNT
   w_rd <= r_instr(11 downto 7);
   ----------------------------------------------------
@@ -152,15 +183,15 @@ begin
            -- S TYPE
            (31 downto 11 => in_fe_to_de.instr(31)) & in_fe_to_de.instr(30 downto 25) & in_fe_to_de.instr(11 downto 7) when w_opcode = b"01000" else 
            -- B TYPE
-           (31 downto 12 => in_fe_to_de.inst(31)) & in_fe_to_de.instr(7) & in_fe_to_de.instr(30 downto 25) & in_fe_to_de.instr(11 downto 8) & '0' when w_opcode = b"11000" else 
+           (31 downto 12 => in_fe_to_de.instr(31)) & in_fe_to_de.instr(7) & in_fe_to_de.instr(30 downto 25) & in_fe_to_de.instr(11 downto 8) & '0' when w_opcode = b"11000" else 
            (others => '0'); 
   --REGISTER CONNECTION
   ----------------------------------------------------
   --|          FORWARDING REGISTER OUTPUTS           |
   ----------------------------------------------------     
-  w_fwdrs1 <= w_rs1 when w_muxfwdrs1 = c_MUXFWDRS1_RS1 else
+  w_fwdrs1 <= w_rs1 when w_fwdmuxfwdrs1 = c_MUXFWDRS1_RS1 else
               w_exres; 
-  w_fwdrs2 <= w_rs2 when w_muxfwdrs2 = c_MUXFWDRS2_RS2 else 
+  w_fwdrs2 <= w_rs2 when w_fwdmuxfwdrs2 = c_MUXFWDRS2_RS2 else 
               w_exres; 
  ----------------------------------------------------
  --|          EVALUATE BRANCH/JUMP TARGET           |
@@ -174,15 +205,24 @@ begin
  ----------------------------------------------------
  --|           ASSIGN OUTPUTS (internal)            |
  ----------------------------------------------------   
- out_de_to_cu.opcode <= w_opcode; 
- out_de_to_cu.func3 <= w_func3; 
- out_de_to_cu.func7 <= w_func7; 
- out_de_to_cu.branch <= w_exbranch; 
+ -- CONTROL UNIT
+ w_de_to_cu.opcode <= w_opcode; 
+ w_de_to_cu.func3 <= w_func3; 
+ w_de_to_cu.func7 <= w_func7; 
+ w_de_to_cu.exbranch <= w_exbranch; 
 
- out_de_to_fwd.ders1 <= r_rs1;  
- out_de_to_fwd.ders2 <= r_rs2; 
- out_de_to_fwd.exregwe <= w_exregop; 
- out_de_to_fwd.exregadr <= w_exrd; 
+ -- FORWARDING UNIT
+ w_de_to_fwd.ders1adr <= w_rs1adr;  
+ w_de_to_fwd.ders2adr <= w_rs2adr; 
+ w_de_to_fwd.exregop <= w_exregop; 
+ w_de_to_fwd.exregadr <= w_exrd; 
+
+ -- REGFILE
+ w_de_to_regfile.regop <= w_exregop; 
+ w_de_to_regfile.rd <= w_exrd; 
+ w_de_to_regfile.rs1adr <= w_rs1adr; 
+ w_de_to_regfile.rs2adr <= w_rs2adr; 
+ w_de_to_regfile.wrin <= w_exres; 
  ----------------------------------------------------
  --|           ASSIGN OUTPUTS (external)            |
  ----------------------------------------------------    
@@ -190,18 +230,18 @@ begin
  out_de_to_ex.rs2 <= w_fwdrs2; 
  out_de_to_ex.rd <= w_rd; 
  out_de_to_ex.imm <= w_imm; 
- out_de_to_ex.muxrs1 <= w_muxrs1; 
- out_de_to_ex.muxrs2 <= w_muxrs2; 
- out_de_to_ex.alucntrl <= w_alucntrl; 
- out_de_to_ex.muxalu <= w_muxalu; 
- out_de_to_ex.regop <= w_regop; 
- out_de_to_ex.memop <= w_memop; 
- out_de_to_ex.branch <= w_branch; 
+ out_de_to_ex.muxrs1 <= w_cumuxrs1; 
+ out_de_to_ex.muxrs2 <= w_cumuxrs2; 
+ out_de_to_ex.alucntrl <= w_cualucntrl; 
+ out_de_to_ex.muxalu <= w_cumuxalu; 
+ out_de_to_ex.regop <= w_curegop; 
+ out_de_to_ex.memop <= w_cumemop; 
+ out_de_to_ex.branch <= w_cubranch; 
 
  out_de_to_fe.pc4 <= r_pc4; 
  out_de_to_fe.branchadr <= w_branchadr; -- from ex stage
  out_de_to_fe.jaladr <= w_jaladr; 
  out_de_to_fe.jalradr <= w_jalradr; 
- out_de_to_fe.muxpc <= w_muxpc; 
- out_de_to_fe.muxnop <= w_muxnop; 
+ out_de_to_fe.muxpc <= w_cumuxpc; 
+ out_de_to_fe.muxnop <= w_cumuxnop; 
 end behavior;

@@ -118,17 +118,17 @@ package common is
   end record fe_to_de_t;
 
   type de_to_fe_t is record
-    pc4    : reglen_t; --pc + 4
-    jump   : reglen_t; --new jump address
-    jalr   : reglen_t; --new jump and link address
-    branch : reglen_t; --current(new or predicted) branch address
-    muxpc  : muxpc_t; --multiplexes new pc value
-    muxnop : muxnop_t; --muxes either currrent op or a NOP
+    pc4       : reglen_t; --pc + 4
+    jaladr    : reglen_t; --new jump address
+    jalradr   : reglen_t; --new jump and link address
+    branchadr : reglen_t; --current(new or predicted) branch address
+    muxpc     : muxpc_t; --multiplexes new pc value
+    muxnop    : muxnop_t; --muxes either currrent op or a NOP
   end record de_to_fe_t;
 
   type de_to_regfile_t is record
     regop  : regop_t; --register operation
-    wradr  : regadr_t; --write address
+    rd     : regadr_t; --write address
     rs1adr : regadr_t; --address of register source 1
     rs2adr : regadr_t; --address of register source 2
     wrin   : reglen_t; --write data input
@@ -172,6 +172,8 @@ package common is
   end record fwd_to_de_t;  
 
   type de_to_ex_t is record
+    -- BRANCH TARGET UNIT OPERANDS
+    branch    : branch_t; 
     --ALU OPERANDS
     rs1       : reglen_t; --operand a of ALU
     rs2       : reglen_t; --operand b of ALU
@@ -184,11 +186,13 @@ package common is
     alucntrl  : alucntrl_t; --ALU control signals
     regop     : regop_t; --register operation
     memop     : memop_t; --write memory
+    -- DECODER FEEDBACK
+    rd        : regadr_t; 
   end record de_to_ex_t;
 
   type ex_to_de_t is record
     --OPERAND OUTPUT
-    exres     : reglen_t; 
+    res       : reglen_t; 
     regop     : regop_t; --register operation
     rd        : regadr_t; 
     branch    : boolean; 
