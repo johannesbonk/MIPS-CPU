@@ -82,9 +82,6 @@ architecture behavior of DECODE is
   -- FORWARDING UNIT
   signal w_fwdmuxfwdrs1 : muxfwdrs1_t; 
   signal w_fwdmuxfwdrs2 : muxfwdrs2_t;  
-  -- FROM REGFILE 
-  signal w_regfilers1 : reglen_t; 
-  signal w_regfilers2 : reglen_t;
   component ControlUnit is
     port(in_de_to_cu  : de_to_cu_t;
          out_cu_to_de : cu_to_de_t);

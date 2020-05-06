@@ -12,7 +12,7 @@ end RegisterFile;
 
 
 architecture RTL of RegisterFile is
-  type reg_t is array(0 to 2**(regadr_t'length - 1)) of reglen_t;
+  type reg_t is array(0 to 2**(regadr_t'length)) of reglen_t;
   signal r_reg_file : reg_t := (others => (others => '0'));
 begin
   p_REG_FILE : process (in_ext_to_all.clk, in_ext_to_all.clr) is
