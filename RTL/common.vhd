@@ -161,7 +161,7 @@ package common is
 
   type de_to_fwd_t is record
     exregop  : regop_t; 
-    exregadr : regadr_t; 
+    exrd     : regadr_t; 
     ders1adr : regadr_t; 
     ders2adr : regadr_t; 
   end record de_to_fwd_t;

@@ -27,16 +27,16 @@ end entity ForwardingUnit;
 
 architecture logic of ForwardingUnit is
 begin
-  p_FORWARD_MUX1: process(in_de_to_fwd.exregop, in_de_to_fwd.exregadr, in_de_to_fwd.ders1adr, in_de_to_fwd.ders2adr)
+  p_FORWARD_MUX1: process(in_de_to_fwd.exregop, in_de_to_fwd.exrd, in_de_to_fwd.ders1adr, in_de_to_fwd.ders2adr)
   begin
     -- output for muxfwdrs1
-    if((in_de_to_fwd.exregop = c_REG_WE) and (to_integer(unsigned(in_de_to_fwd.exregadr)) /= 0) and (in_de_to_fwd.exregadr = in_de_to_fwd.ders1adr)) then 
+    if((in_de_to_fwd.exregop = c_REG_WE) and (to_integer(unsigned(in_de_to_fwd.exrd)) /= 0) and (in_de_to_fwd.exrd = in_de_to_fwd.ders1adr)) then 
         out_fwd_to_de.muxfwdrs1 <= c_MUXFWDRS1_EX; 
     else 
         out_fwd_to_de.muxfwdrs1 <= c_MUXFWDRS1_RS1; 
     end if; 
     -- output for muxfwdrs2
-    if((in_de_to_fwd.exregop = c_REG_WE) and (to_integer(unsigned(in_de_to_fwd.exregadr)) /= 0) and (in_de_to_fwd.exregadr = in_de_to_fwd.ders2adr)) then 
+    if((in_de_to_fwd.exregop = c_REG_WE) and (to_integer(unsigned(in_de_to_fwd.exrd)) /= 0) and (in_de_to_fwd.exrd = in_de_to_fwd.ders2adr)) then 
         out_fwd_to_de.muxfwdrs2 <= c_MUXFWDRS2_EX;  
     else 
         out_fwd_to_de.muxfwdrs2 <= c_MUXFWDRS2_RS2; 
