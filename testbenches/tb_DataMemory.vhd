@@ -43,7 +43,7 @@ architecture tb of tb_DataMemory is
   p_SIMULATION : process
     begin
       wait for c_T_SET;
-      w_ex_to_dmem.memop <= c_MEM_WE;
+      w_ex_to_dmem.memop <= c_MEM_SB;
       w_ex_to_dmem.addr <= x"00000000";
       w_ex_to_dmem.data <= x"11111111";
       wait for c_T_SET;
@@ -52,15 +52,45 @@ architecture tb of tb_DataMemory is
       w_ext_to_all.clk <= '0';
       wait for c_T_CLK;
 
-      w_ex_to_dmem.memop <= c_MEM_WE;
-      w_ex_to_dmem.addr <= x"0000003f";
-      w_ex_to_dmem.data <= x"c3c3c3c3";
+      w_ex_to_dmem.memop <= c_MEM_LW;
+      w_ex_to_dmem.addr <= (others => '0');
+      wait for c_T_SET;
+      assert w_dmem_to_ex.data = x"00000011"
+      report "Unexpected result at " & lf &
+              "Address: " & integer'image(to_integer(unsigned(w_ex_to_dmem.addr(5 downto 0)))) & "; " & lf &
+              "value expected: " & "00000011" & "; " & lf &
+              "value read: " & integer'image(to_integer(signed(w_dmem_to_ex.data)))
+      severity error;
+
+      w_ex_to_dmem.memop <= c_MEM_SH;
+      w_ex_to_dmem.addr <= x"00000000";
+      w_ex_to_dmem.data <= x"00001111";
       wait for c_T_SET;
       w_ext_to_all.clk <= '1';
       wait for c_T_CLK;
       w_ext_to_all.clk <= '0';
       wait for c_T_CLK;
 
+      w_ex_to_dmem.memop <= c_MEM_LW;
+      w_ex_to_dmem.addr <= (others => '0');
+      wait for c_T_SET;
+      assert w_dmem_to_ex.data = x"00001111"
+      report "Unexpected result at " & lf &
+              "Address: " & integer'image(to_integer(unsigned(w_ex_to_dmem.addr(5 downto 0)))) & "; " & lf &
+              "value expected: " & "00001111" & "; " & lf &
+              "value read: " & integer'image(to_integer(signed(w_dmem_to_ex.data)))
+      severity error;
+
+      w_ex_to_dmem.memop <= c_MEM_SW;
+      w_ex_to_dmem.addr <= x"00000000";
+      w_ex_to_dmem.data <= x"11111111";
+      wait for c_T_SET;
+      w_ext_to_all.clk <= '1';
+      wait for c_T_CLK;
+      w_ext_to_all.clk <= '0';
+      wait for c_T_CLK;
+
+      w_ex_to_dmem.memop <= c_MEM_LW;
       w_ex_to_dmem.addr <= (others => '0');
       wait for c_T_SET;
       assert w_dmem_to_ex.data = x"11111111"
@@ -70,6 +100,45 @@ architecture tb of tb_DataMemory is
               "value read: " & integer'image(to_integer(signed(w_dmem_to_ex.data)))
       severity error;
 
+      w_ex_to_dmem.memop <= c_MEM_SW;
+      w_ex_to_dmem.addr <= x"0000003f";
+      w_ex_to_dmem.data <= x"c3c3c3c3";
+      wait for c_T_SET;
+      w_ext_to_all.clk <= '1';
+      wait for c_T_CLK;
+      w_ext_to_all.clk <= '0';
+      wait for c_T_CLK;
+
+      w_ex_to_dmem.memop <= c_MEM_LB;
+      w_ex_to_dmem.addr <= (others => '0');
+      wait for c_T_SET;
+      assert w_dmem_to_ex.data = x"00000011"
+      report "Unexpected result at " & lf &
+              "Address: " & integer'image(to_integer(unsigned(w_ex_to_dmem.addr(5 downto 0)))) & "; " & lf &
+              "value expected: " & "00000011" & "; " & lf &
+              "value read: " & integer'image(to_integer(signed(w_dmem_to_ex.data)))
+      severity error;
+
+      w_ex_to_dmem.memop <= c_MEM_LH;
+      w_ex_to_dmem.addr <= (others => '0');
+      wait for c_T_SET;
+      assert w_dmem_to_ex.data = x"00001111"
+      report "Unexpected result at " & lf &
+              "Address: " & integer'image(to_integer(unsigned(w_ex_to_dmem.addr(5 downto 0)))) & "; " & lf &
+              "value expected: " & "00001111" & "; " & lf &
+              "value read: " & integer'image(to_integer(signed(w_dmem_to_ex.data)))
+      severity error;
+
+      w_ex_to_dmem.memop <= c_MEM_WD;
+      w_ex_to_dmem.addr <= x"0000003f";
+      w_ex_to_dmem.data <= x"00000000";
+      wait for c_T_SET;
+      w_ext_to_all.clk <= '1';
+      wait for c_T_CLK;
+      w_ext_to_all.clk <= '0';
+      wait for c_T_CLK;
+
+      w_ex_to_dmem.memop <= c_MEM_LW;
       w_ex_to_dmem.addr <= x"0000003f";
       wait for c_T_SET;
       assert w_dmem_to_ex.data = x"c3c3c3c3"
@@ -79,6 +148,29 @@ architecture tb of tb_DataMemory is
               "value read: " & integer'image(to_integer(signed(w_dmem_to_ex.data)))
       severity error;
 
+      wait for c_T_CLK; 
+      w_ex_to_dmem.memop <= c_MEM_LW;
+      w_ext_to_all.clr <= '1'; 
+      wait for c_T_CLK; 
+      w_ext_to_all.clr <= '0'; 
+      wait for c_T_CLK; 
+
+      assert w_dmem_to_ex.data = x"00000000"
+      report "Unexpected result at " & lf &
+              "Address: " & integer'image(to_integer(unsigned(w_ex_to_dmem.addr(5 downto 0)))) & "; " & lf &
+              "value expected: " & "00000000" & "; " & lf &
+              "value read: " & integer'image(to_integer(signed(w_dmem_to_ex.data)))
+      severity error;
+
+      
+      w_ex_to_dmem.addr <= x"00000000";
+      wait for c_T_CLK; 
+      assert w_dmem_to_ex.data = x"00000000"
+      report "Unexpected result at " & lf &
+              "Address: " & integer'image(to_integer(unsigned(w_ex_to_dmem.addr(5 downto 0)))) & "; " & lf &
+              "value expected: " & "00000000" & "; " & lf &
+              "value read: " & integer'image(to_integer(signed(w_dmem_to_ex.data)))
+      severity error;
     assert false report "Reached end of test successfully!";
     wait; --make process wait for an infinite timespan
   end process;

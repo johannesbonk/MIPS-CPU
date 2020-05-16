@@ -26,11 +26,32 @@ entity BranchUnit is
 end entity;
 
 architecture behavior of BranchUnit is
+  signal w_beq  : std_logic; 
+  signal w_bne  : std_logic; 
+  signal w_blt  : std_logic; 
+  signal w_bge  : std_logic; 
+  signal w_bltu : std_logic; 
+  signal w_bgeu : std_logic; 
 begin
-  out_bu_to_ex.eq <= '1' when in_ex_to_bu.op_a = in_ex_to_bu.op_b else
-                     '0';
-  out_bu_to_ex.lt <= '1' when signed(in_ex_to_bu.op_a) < signed(in_ex_to_bu.op_b) else
-                     '0';
-  out_bu_to_ex.ltu <= '1' when unsigned(in_ex_to_bu.op_a) < unsigned(in_ex_to_bu.op_b) else
-                      '0';
+
+  w_beq <= '1' when in_ex_to_bu.op_a = in_ex_to_bu.op_b else
+           '0';
+  w_bne <= '1' when in_ex_to_bu.op_a /= in_ex_to_bu.op_b else 
+            '0'; 
+  w_blt <= '1' when signed(in_ex_to_bu.op_a) < signed(in_ex_to_bu.op_b) else
+           '0';
+  w_bge <= '1' when ((signed(in_ex_to_bu.op_a) > signed(in_ex_to_bu.op_b)) or (in_ex_to_bu.op_a = in_ex_to_bu.op_b)) else 
+           '0'; 
+  w_bltu <= '1' when unsigned(in_ex_to_bu.op_a) < unsigned(in_ex_to_bu.op_b) else
+            '0';
+  w_bgeu <= '1' when ((unsigned(in_ex_to_bu.op_a) > unsigned(in_ex_to_bu.op_b)) or (in_ex_to_bu.op_a = in_ex_to_bu.op_b)) else 
+            '0';
+            
+  out_bu_to_ex.branch <= true when ((in_ex_to_bu.branch = c_BRANCH_BEQ) and w_beq = '1') else 
+                         true when ((in_ex_to_bu.branch = c_BRANCH_BNE) and w_bne = '1') else 
+                         true when ((in_ex_to_bu.branch = c_BRANCH_BLT) and w_blt = '1') else 
+                         true when ((in_ex_to_bu.branch = c_BRANCH_BGE) and w_bge = '1') else 
+                         true when ((in_ex_to_bu.branch = c_BRANCH_BLTU) and w_bltu = '1') else 
+                         true when ((in_ex_to_bu.branch = c_BRANCH_BGEU) and w_bgeu = '1') else
+                         false;  
 end behavior;

@@ -28,19 +28,31 @@ entity DataMemory is
 end DataMemory;
 
 architecture behavior of DataMemory is
-  type ram_t is array (0 to 63) of std_logic_vector(reglen_t'length - 1 downto 0);
+  type ram_t is array (0 to 255) of std_logic_vector(7 downto 0);
   signal r_data_ram : ram_t := (others => (others => '0'));
   begin
   p_WRITE_PROCESS: process (in_ext_to_all.clk, in_ext_to_all.clr)
   begin
     if (rising_edge(in_ext_to_all.clk)) then
-      if (in_ex_to_dmem.memop = c_MEM_WE) then
-        r_data_ram(to_integer(unsigned(in_ex_to_dmem.addr(5 downto 0)))) <= in_ex_to_dmem.data;
+      if (in_ex_to_dmem.memop = c_MEM_SB) then
+        r_data_ram(to_integer(unsigned(in_ex_to_dmem.addr(5 downto 0)))) <= in_ex_to_dmem.data(7 downto 0);
+      elsif (in_ex_to_dmem.memop = c_MEM_SH) then
+        r_data_ram(to_integer(unsigned(in_ex_to_dmem.addr(5 downto 0)))) <= in_ex_to_dmem.data(7 downto 0);
+        r_data_ram(to_integer(unsigned(in_ex_to_dmem.addr(5 downto 0))) + 1) <= in_ex_to_dmem.data(15 downto 8);
+      elsif (in_ex_to_dmem.memop = c_MEM_SW) then
+        r_data_ram(to_integer(unsigned(in_ex_to_dmem.addr(5 downto 0)))) <= in_ex_to_dmem.data(7 downto 0);
+        r_data_ram(to_integer(unsigned(in_ex_to_dmem.addr(5 downto 0))) + 1) <= in_ex_to_dmem.data(15 downto 8);
+        r_data_ram(to_integer(unsigned(in_ex_to_dmem.addr(5 downto 0))) + 2) <= in_ex_to_dmem.data(23 downto 16);
+        r_data_ram(to_integer(unsigned(in_ex_to_dmem.addr(5 downto 0))) + 3) <= in_ex_to_dmem.data(31 downto 24);
       end if;
     elsif (falling_edge(in_ext_to_all.clr)) then
       r_data_ram <= (others => (others => '0'));
     end if;
    end process;
 
-  out_dmem_to_ex.data <= r_data_ram(to_integer(unsigned(in_ex_to_dmem.addr(5 downto 0)))); --asynchronous read
+  --asynchronous read
+  out_dmem_to_ex.data <= (31 downto 8 => '0') & r_data_ram(to_integer(unsigned(in_ex_to_dmem.addr(5 downto 0)))) when in_ex_to_dmem.memop = c_MEM_LB else 
+                         (31 downto 16 => '0') & r_data_ram(to_integer(unsigned(in_ex_to_dmem.addr(5 downto 0))) + 1) & r_data_ram(to_integer(unsigned(in_ex_to_dmem.addr(5 downto 0)))) when in_ex_to_dmem.memop = c_MEM_LH else 
+                         r_data_ram(to_integer(unsigned(in_ex_to_dmem.addr(5 downto 0))) + 3) & r_data_ram(to_integer(unsigned(in_ex_to_dmem.addr(5 downto 0))) + 2) & 
+                                                                           r_data_ram(to_integer(unsigned(in_ex_to_dmem.addr(5 downto 0))) + 1) & r_data_ram(to_integer(unsigned(in_ex_to_dmem.addr(5 downto 0)))) when in_ex_to_dmem.memop = c_MEM_LW;
 end behavior;

@@ -25,7 +25,7 @@ entity ALU is
        out_alu_to_ex : out alu_to_ex_t);
 end entity;
 
-architecture behavior of ALU is
+architecture logic of ALU is
   signal w_slt : reglen_t;
   signal w_sltu : reglen_t;
 begin
@@ -59,4 +59,4 @@ begin
                        std_logic_vector(shift_right(signed(in_ex_to_alu.op_a), to_integer(unsigned(in_ex_to_alu.op_b)))) when in_ex_to_alu.cntrl = c_ALU_SRA else --shift right arithmetically
                        w_slt when in_ex_to_alu.cntrl = c_ALU_SLT else --set less than
                        w_sltu when in_ex_to_alu.cntrl = c_ALU_SLTU; --set less than unsigned
-end behavior;
+end logic;

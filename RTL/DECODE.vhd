@@ -29,7 +29,7 @@ entity DECODE is
        out_de_to_ex   : out de_to_ex_t);
 end entity DECODE;
 
-architecture behavior of DECODE is
+architecture RTL of DECODE is
   --PIPELINE REGISTERS
   signal r_instr     : reglen_t;
   signal r_pc        : reglen_t;
@@ -196,9 +196,9 @@ begin
   --JUMP TARGET 
   w_jaladr <= w_imm; 
   --JUMP AND LINK REGISTER TARGET
-  w_jalradr <= (std_logic_vector(unsigned(w_fwdrs1) + unsigned(w_imm))) & x"ff_ff_ff_fe";
+  w_jalradr <= (std_logic_vector(unsigned(w_fwdrs1) + unsigned(w_imm))) and x"ff_ff_ff_fe";
   --BRANCH TARGET 
-  w_branchadr <= w_branchadr;
+  w_branchadr <= w_exbranchadr;
  ----------------------------------------------------
  --|           ASSIGN OUTPUTS (internal)            |
  ----------------------------------------------------   
@@ -212,7 +212,7 @@ begin
  w_de_to_fwd.ders1adr <= w_rs1adr;  
  w_de_to_fwd.ders2adr <= w_rs2adr; 
  w_de_to_fwd.exregop <= w_exregop; 
- w_de_to_fwd.exregadr <= w_exrd; 
+ w_de_to_fwd.exrd <= w_exrd; 
 
  -- REGFILE
  w_de_to_regfile.regop <= w_exregop; 
@@ -234,6 +234,7 @@ begin
  out_de_to_ex.regop <= w_curegop; 
  out_de_to_ex.memop <= w_cumemop; 
  out_de_to_ex.branch <= w_cubranch; 
+ out_de_to_ex.pc <= r_pc; 
 
  out_de_to_fe.pc4 <= r_pc4; 
  out_de_to_fe.branchadr <= w_branchadr; -- from ex stage
@@ -241,4 +242,4 @@ begin
  out_de_to_fe.jalradr <= w_jalradr; 
  out_de_to_fe.muxpc <= w_cumuxpc; 
  out_de_to_fe.muxnop <= w_cumuxnop; 
-end behavior;
+end RTL;

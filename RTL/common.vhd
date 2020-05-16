@@ -188,6 +188,8 @@ package common is
     memop     : memop_t; --write memory
     -- DECODER FEEDBACK
     rd        : regadr_t; 
+    -- CURRENT PROGRAM COUNTER
+    pc        : reglen_t; 
   end record de_to_ex_t;
 
   type ex_to_de_t is record
@@ -210,14 +212,13 @@ package common is
   end record alu_to_ex_t;
 
   type ex_to_bu_t is record
-    op_a : reglen_t;
-    op_b : reglen_t;
+    op_a   : reglen_t;
+    op_b   : reglen_t;
+    branch : branch_t; 
   end record ex_to_bu_t;
 
   type bu_to_ex_t is record
-    eq  : std_logic;
-    lt  : std_logic;
-    ltu : std_logic;
+    branch : boolean; 
   end record bu_to_ex_t;
 
   type ex_to_dmem_t is record

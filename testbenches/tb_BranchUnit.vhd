@@ -27,8 +27,9 @@ end;
 architecture tb of tb_BranchUnit is
   constant c_DELTA_TIME : time := 1 ns;
 
-  signal w_ex_to_bu : ex_to_bu_t := (op_a => (others => '1'),
-                                     op_b => (others => '0'));
+  signal w_ex_to_bu : ex_to_bu_t := (op_a => (others => '0'),
+                                     op_b => (others => '0'),
+                                     branch => c_BRANCH_BEQ);
   signal w_bu_to_ex : bu_to_ex_t;
 
   begin
@@ -38,46 +39,95 @@ architecture tb of tb_BranchUnit is
 
   p_SIMULATION : process
     begin
+      --TEST BEQ 
+        --VECTORS ARE EQUAL (true OUTPUT EXPECTED)
       wait for c_DELTA_TIME;
-      w_ex_to_bu.op_a <= x"00000000";
-      w_ex_to_bu.op_b <= x"00000000";
+      checkBranchUnitOut(w_ex_to_bu.op_a, w_ex_to_bu.op_b, w_ex_to_bu.branch, w_bu_to_ex.branch, true);
+        --VECTORS ARE NOT EQUAL (false OUTPUT EXPECTED)
+      w_ex_to_bu.op_a <= x"ffffffff";
+      w_ex_to_bu.op_b <= x"fffffff0";
       wait for c_DELTA_TIME;
-      checkBranchUnitOut(w_ex_to_bu.op_a, w_ex_to_bu.op_b, w_bu_to_ex.eq, w_bu_to_ex.lt, w_bu_to_ex.ltu, '1', '0', '0');
+      checkBranchUnitOut(w_ex_to_bu.op_a, w_ex_to_bu.op_b, w_ex_to_bu.branch, w_bu_to_ex.branch, false);
 
+      --TEST BNE
+      w_ex_to_bu.branch <= c_BRANCH_BNE; 
+        --VECTORS ARE NOT EQUAL (true OUTPUT EXPECTED) 
+      w_ex_to_bu.op_a <= x"ffffffff";
+      w_ex_to_bu.op_b <= x"fffffff0";
+      wait for c_DELTA_TIME;
+      checkBranchUnitOut(w_ex_to_bu.op_a, w_ex_to_bu.op_b, w_ex_to_bu.branch, w_bu_to_ex.branch, true);
+        --VECTORS ARE EQUAL (false OUTPUT EXPECTED)
       w_ex_to_bu.op_a <= x"ffffffff";
       w_ex_to_bu.op_b <= x"ffffffff";
       wait for c_DELTA_TIME;
-      checkBranchUnitOut(w_ex_to_bu.op_a, w_ex_to_bu.op_b, w_bu_to_ex.eq, w_bu_to_ex.lt, w_bu_to_ex.ltu, '1', '0', '0');
+      checkBranchUnitOut(w_ex_to_bu.op_a, w_ex_to_bu.op_b, w_ex_to_bu.branch, w_bu_to_ex.branch, false);
 
+      --TEST BLT
+      w_ex_to_bu.branch <= c_BRANCH_BLT; 
+        --VECTOR A IS LESS THAN VECTOR B (true OUTPUT EXPECTED) 
       w_ex_to_bu.op_a <= x"ffffffff";
-      w_ex_to_bu.op_b <= x"fffffffe";
-      wait for c_DELTA_TIME;
-      checkBranchUnitOut(w_ex_to_bu.op_a, w_ex_to_bu.op_b, w_bu_to_ex.eq, w_bu_to_ex.lt, w_bu_to_ex.ltu, '0', '0', '0');
-
-      w_ex_to_bu.op_a <= x"fffffffe";
-      w_ex_to_bu.op_b <= x"ffffffff";
-      wait for c_DELTA_TIME;
-      checkBranchUnitOut(w_ex_to_bu.op_a, w_ex_to_bu.op_b, w_bu_to_ex.eq, w_bu_to_ex.lt, w_bu_to_ex.ltu, '0', '1', '1');
-
-      w_ex_to_bu.op_a <= x"7ffffffe";
       w_ex_to_bu.op_b <= x"7fffffff";
       wait for c_DELTA_TIME;
-      checkBranchUnitOut(w_ex_to_bu.op_a, w_ex_to_bu.op_b, w_bu_to_ex.eq, w_bu_to_ex.lt, w_bu_to_ex.ltu, '0', '1', '1');
+      checkBranchUnitOut(w_ex_to_bu.op_a, w_ex_to_bu.op_b, w_ex_to_bu.branch, w_bu_to_ex.branch, true);
+        --VECTOR A EQUAL TO VECTOR B (false OUTPUT EXPECTED)
+      w_ex_to_bu.op_a <= x"ffffffff";
+      w_ex_to_bu.op_b <= x"ffffffff";
+      wait for c_DELTA_TIME;
+      checkBranchUnitOut(w_ex_to_bu.op_a, w_ex_to_bu.op_b, w_ex_to_bu.branch, w_bu_to_ex.branch, false);
 
-      w_ex_to_bu.op_a <= x"80000000";
+      --TEST BGE
+      w_ex_to_bu.branch <= c_BRANCH_BGE; 
+        --VECTOR A IS GREATER THAN VECTOR B (true OUTPUT EXPECTED) 
+      w_ex_to_bu.op_a <= x"7fffffff";
       w_ex_to_bu.op_b <= x"00000000";
       wait for c_DELTA_TIME;
-      checkBranchUnitOut(w_ex_to_bu.op_a, w_ex_to_bu.op_b, w_bu_to_ex.eq, w_bu_to_ex.lt, w_bu_to_ex.ltu, '0', '1', '0');
+      checkBranchUnitOut(w_ex_to_bu.op_a, w_ex_to_bu.op_b, w_ex_to_bu.branch, w_bu_to_ex.branch, true);
+        --VECTOR A EQUAL TO VECTOR B (true OUTPUT EXPECTED)
+      w_ex_to_bu.op_a <= x"ffffffff";
+      w_ex_to_bu.op_b <= x"ffffffff";
+      wait for c_DELTA_TIME;
+      checkBranchUnitOut(w_ex_to_bu.op_a, w_ex_to_bu.op_b, w_ex_to_bu.branch, w_bu_to_ex.branch, true);
+        --VECTOR A IS LESS THAN VECTOR B (false OUTPUT EXPECTED)
+      w_ex_to_bu.op_a <= x"ffffffff";
+      w_ex_to_bu.op_b <= x"7fffffff";
+      wait for c_DELTA_TIME;
+      checkBranchUnitOut(w_ex_to_bu.op_a, w_ex_to_bu.op_b, w_ex_to_bu.branch, w_bu_to_ex.branch, false);
 
+      --TEST BLTU
+      w_ex_to_bu.branch <= c_BRANCH_BLTU; 
+        --VECTOR A IS LESS THAN VECTOR B (true OUTPUT EXPECTED) 
       w_ex_to_bu.op_a <= x"7fffffff";
       w_ex_to_bu.op_b <= x"ffffffff";
       wait for c_DELTA_TIME;
-      checkBranchUnitOut(w_ex_to_bu.op_a, w_ex_to_bu.op_b, w_bu_to_ex.eq, w_bu_to_ex.lt, w_bu_to_ex.ltu, '0', '0', '1');
-
+      checkBranchUnitOut(w_ex_to_bu.op_a, w_ex_to_bu.op_b, w_ex_to_bu.branch, w_bu_to_ex.branch, true);
+        --VECTOR A EQUAL TO VECTOR B (false OUTPUT EXPECTED)
+      w_ex_to_bu.op_a <= x"ffffffff";
+      w_ex_to_bu.op_b <= x"ffffffff";
+      wait for c_DELTA_TIME;
+      checkBranchUnitOut(w_ex_to_bu.op_a, w_ex_to_bu.op_b, w_ex_to_bu.branch, w_bu_to_ex.branch, false);
+        --VECTOR A IS GREATER THAN VECTOR B (false OUTPUT EXPECTED) 
       w_ex_to_bu.op_a <= x"ffffffff";
       w_ex_to_bu.op_b <= x"7fffffff";
       wait for c_DELTA_TIME;
-      checkBranchUnitOut(w_ex_to_bu.op_a, w_ex_to_bu.op_b, w_bu_to_ex.eq, w_bu_to_ex.lt, w_bu_to_ex.ltu, '0', '1', '0');
+      checkBranchUnitOut(w_ex_to_bu.op_a, w_ex_to_bu.op_b, w_ex_to_bu.branch, w_bu_to_ex.branch, false);
+
+      --TEST BGEU
+      w_ex_to_bu.branch <= c_BRANCH_BGEU; 
+      --VECTOR A IS GREATER THAN VECTOR B (true OUTPUT EXPECTED) 
+      w_ex_to_bu.op_a <= x"ffffffff";
+      w_ex_to_bu.op_b <= x"7fffffff";
+      wait for c_DELTA_TIME;
+      checkBranchUnitOut(w_ex_to_bu.op_a, w_ex_to_bu.op_b, w_ex_to_bu.branch, w_bu_to_ex.branch, true);
+        --VECTOR A EQUAL TO VECTOR B (true OUTPUT EXPECTED)
+      w_ex_to_bu.op_a <= x"ffffffff";
+      w_ex_to_bu.op_b <= x"ffffffff";
+      wait for c_DELTA_TIME;
+      checkBranchUnitOut(w_ex_to_bu.op_a, w_ex_to_bu.op_b, w_ex_to_bu.branch, w_bu_to_ex.branch, true);
+        --VECTOR A IS LESS THAN VECTOR B (false OUTPUT EXPECTED) 
+      w_ex_to_bu.op_a <= x"7fffffff";
+      w_ex_to_bu.op_b <= x"ffffffff";
+      wait for c_DELTA_TIME;
+      checkBranchUnitOut(w_ex_to_bu.op_a, w_ex_to_bu.op_b, w_ex_to_bu.branch, w_bu_to_ex.branch, false);
 
       wait for c_DELTA_TIME;
     assert false report "Reached end of test successfully!";
