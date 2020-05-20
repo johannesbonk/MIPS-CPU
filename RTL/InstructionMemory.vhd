@@ -26,7 +26,7 @@ entity InstructionMemory is
         out_imem_to_fe : out imem_to_fe_t);
 end InstructionMemory;
 
-architecture behavior of InstructionMemory is
+architecture RTL of InstructionMemory is
   type ram_t is array (0 to 31) of std_logic_vector(reglen_t'length - 1 downto 0);
   -- Fibonacci code
   signal r_data_ram : ram_t :=
@@ -63,8 +63,9 @@ architecture behavior of InstructionMemory is
    x"ffffffff",
    x"ffffffff",
    x"ffffffff",
+   x"ffffffff",
    x"ffffffff");
   begin
 
   out_imem_to_fe.data <= r_data_ram(to_integer(unsigned(in_fe_to_imem.addr(4 downto 0)))); --asynchronous read
-end behavior;
+end RTL;
