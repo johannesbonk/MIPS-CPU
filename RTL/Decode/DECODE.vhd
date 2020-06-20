@@ -150,7 +150,7 @@ begin
       r_pc4 <= in_fe_to_de.pc4;
     end if;
     if(falling_edge(in_ext_to_all.clr)) then -- clear pipeline register on reset
-      r_instr <= (others => '0');
+      r_instr <= x"00000013";
       r_pc <= (others => '0');
       r_pc4 <= (others => '0');
   end if;
@@ -198,7 +198,7 @@ begin
   --JUMP AND LINK REGISTER TARGET
   w_jalradr <= (std_logic_vector(unsigned(w_fwdrs1) + unsigned(w_imm))) and x"ff_ff_ff_fe";
   --BRANCH TARGET 
-  w_branchadr <= w_exbranchadr;
+  w_branchadr <= std_logic_vector(to_integer(unsigned(w_pc)) + to_integer(signed(w_imm)));
  ----------------------------------------------------
  --|           ASSIGN OUTPUTS (internal)            |
  ----------------------------------------------------   
@@ -234,10 +234,9 @@ begin
  out_de_to_ex.regop <= w_curegop; 
  out_de_to_ex.memop <= w_cumemop; 
  out_de_to_ex.branch <= w_cubranch; 
- out_de_to_ex.pc <= r_pc; 
+ out_de_to_ex.pc4 <= r_pc4; 
+ out_de_to_ex.branchadr <= w_branchadr; 
 
- out_de_to_fe.pc4 <= r_pc4; 
- out_de_to_fe.branchadr <= w_branchadr; -- from ex stage
  out_de_to_fe.jaladr <= w_jaladr; 
  out_de_to_fe.jalradr <= w_jalradr; 
  out_de_to_fe.muxpc <= w_cumuxpc; 

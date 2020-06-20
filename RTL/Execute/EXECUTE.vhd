@@ -18,26 +18,30 @@ LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
 USE ieee.numeric_std.ALL;
 
+USE work.common.ALL; 
+
 entity EXECUTE is
   port(in_ext_to_all  : in ext_to_all_t;
        in_de_to_ex    : in de_to_ex_t;
-       out_ex_to_de   : out ex_to_de_t);
+       out_ex_to_de   : out ex_to_de_t
+       out_ex_to_fe   : out ex_to_fe_t);
 end entity;
 
 architecture behavior of EXECUTE is
   --PIPELINE REGISTER FOR OUTPUT SIGNALS OF INSTRUCTION DECODE PHASE
-  signal r_rs1      : reglen_t; 
-  signal r_rs2      : reglen_t; 
-  signal r_imm      : reglen_t; 
-  signal r_rd       : regadr_t; 
-  signal r_muxrs1   : muxrs1_t; 
-  signal r_muxrs2   : muxrs2_t; 
-  signal r_muxalu   : muxalu_t; 
-  signal r_alucntrl : alucntrl_t; 
-  signal r_regop    : regop_t; 
-  signal r_memop    : memop_t;  
-  signal r_branch   : branch_t; 
-  signal r_pc       : reglen_t; 
+  signal r_rs1       : reglen_t; 
+  signal r_rs2       : reglen_t; 
+  signal r_imm       : reglen_t; 
+  signal r_rd        : regadr_t; 
+  signal r_muxrs1    : muxrs1_t; 
+  signal r_muxrs2    : muxrs2_t; 
+  signal r_muxalu    : muxalu_t; 
+  signal r_alucntrl  : alucntrl_t; 
+  signal r_regop     : regop_t; 
+  signal r_memop     : memop_t;  
+  signal r_branch    : branch_t; 
+  signal r_pc4       : reglen_t; 
+  signal r_branchadr : reglen_t; 
 
   signal w_muxbout  : reglen_t;
   signal w_aluop_a  : reglen_t;
@@ -51,13 +55,13 @@ architecture behavior of EXECUTE is
   end component ALU;
 
   component BranchUnit is
-    port(in_ex_to_bu  : in ex_to_bu_t,
+    port(in_ex_to_bu  : in ex_to_bu_t;
          out_bu_to_ex : out bu_to_ex_t);
   end component BranchUnit;
 
   component DataMemory is
-  port(in_ext_to_all : in ext_to_all_t,
-      in_ex_to_dmem  : in ex_to_dmem_t,
+  port(in_ext_to_all : in ext_to_all_t;
+      in_ex_to_dmem  : in ex_to_dmem_t;
       out_dmem_to_ex : out dmem_to_ex_t);
   end component DataMemory;
 
@@ -68,7 +72,7 @@ begin
     if(rising_edge(in_ext_to_all.clk)) then
       r_rs1 <= in_de_to_ex.rs1;
       r_rs2 <= in_de_to_ex.rs2;
-      r_imm  <= in_de_to_ex.immi;
+      r_imm  <= in_de_to_ex.imm;
       r_muxrs1 <= in_de_to_ex.muxrs1;
       r_muxrs2 <= in_de_to_ex.muxrs2;
       r_muxalu <= in_de_to_ex.muxalu;
@@ -76,8 +80,9 @@ begin
       r_regop <= in_de_to_ex.regop;
       r_memop <= in_de_to_ex.memop;
       r_rd <= in_de_to_ex.rd; 
-      r_branch <= in_de_to_ex.rd; 
-      r_pc <= in_de_to_ex.pc; 
+      r_branch <= in_de_to_ex.branch; 
+      r_branchadr <= in_de_to_ex.branchadr; 
+      r_pc4 <= in_de_to_ex.pc; 
     end if;
     if(falling_edge(in_ext_to_all.clr)) then
       r_rs1 <= (others => '0');
@@ -88,16 +93,16 @@ begin
       r_muxalu <= (others => '0');
       r_alucntrl <= (others => '0');
       r_regop <= c_REG_WD;
-      r_memop <= c_ME_WD;
+      r_memop <= c_MEM_WD;
       r_rd <= (others => '0'); 
       r_branch <= c_BRANCH_NO; 
-      r_pc <= (others => '0'); 
+      r_branchadr <= (others => '0'); 
+      r_pc4 <= (others => '0'); 
     end if;
   end process;
   --MULTIPLEX ALU OPERAND A
    w_aluop_a <= r_rs1 when r_muxrs1 = c_MUXRS1_REG else
-                (others => '0') when r_muxrs1 = c_MUXRS1_ZERO else 
-                r_pc when r_muxrs1 = c_MUXRS1_PC;
+                (others => '0') when r_muxrs1 = c_MUXRS1_ZERO;
   --MULTIPLEX ALU OPERAND B
    w_aluop_b <= r_rs2 when r_muxrs2 = c_MUXRS2_REG else
                 r_imm when r_muxrs2 = c_MUXRS2_IMM;
@@ -124,6 +129,8 @@ begin
   --************EXECUTION PHASE OUT TO DECODE PHASE******************
   --REGOP PASS THROUGH
   out_ex_to_de.regop <= r_regop;
+  -- BRANCH  ADDRESS PASS THROUGH
+  out_ex_to_fe.branchadr <= r_branchadr; 
   --MULTIPLEX ALU/MEMORY OUTPUT
   out_ex_to_de.alures <= w_alures when r_muxalu = c_MUXALU_ALU else
                          w_memout when r_muxalu = c_MUXALU_MEM else

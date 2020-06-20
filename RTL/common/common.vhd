@@ -52,10 +52,9 @@ package common is
     constant c_ALU_SRL  : alucntrl_t := "0101";
     constant c_ALU_SRA  : alucntrl_t := "1101";
 
-  subtype muxrs1_t is std_logic_vector(1 downto 0); --selects either register 1 or 0 value
-    constant c_MUXRS1_REG   : muxrs1_t := "00";
-    constant c_MUXRS1_ZERO  : muxrs1_t := "01";
-    constant c_MUXRS1_PC    : muxrs1_t := "10"; 
+  subtype muxrs1_t is std_logic; --selects either register 1 or 0 value
+    constant c_MUXRS1_REG   : muxrs1_t := '0';
+    constant c_MUXRS1_ZERO  : muxrs1_t := '1';
 
   subtype muxrs2_t is std_logic; --selects either register or sign/zero extended value
     constant c_MUXRS2_REG   : muxrs2_t := '0'; --also used for shamt
@@ -118,7 +117,6 @@ package common is
   end record fe_to_de_t;
 
   type de_to_fe_t is record
-    pc4       : reglen_t; --pc + 4
     jaladr    : reglen_t; --new jump address
     jalradr   : reglen_t; --new jump and link address
     branchadr : reglen_t; --current(new or predicted) branch address
@@ -173,7 +171,7 @@ package common is
 
   type de_to_ex_t is record
     -- BRANCH TARGET UNIT OPERANDS
-    branch    : branch_t; 
+    branch    : branch_t;
     --ALU OPERANDS
     rs1       : reglen_t; --operand a of ALU
     rs2       : reglen_t; --operand b of ALU
@@ -189,7 +187,9 @@ package common is
     -- DECODER FEEDBACK
     rd        : regadr_t; 
     -- CURRENT PROGRAM COUNTER
-    pc        : reglen_t; 
+    pc4       : reglen_t;
+    -- BRANCH TARGET PROGRAM COUNTER
+    branchadr : reglen_t;  
   end record de_to_ex_t;
 
   type ex_to_de_t is record
@@ -198,8 +198,11 @@ package common is
     regop     : regop_t; --register operation
     rd        : regadr_t; 
     branch    : boolean; 
-    branchadr : reglen_t; 
   end record ex_to_de_t;
+
+  type ex_to_fe_t is record 
+    branchadr : reglen_t; 
+  end record ex_to_fe_t;  
 
   type ex_to_alu_t is record
     op_a  : reglen_t; --alu operand a (rs1)

@@ -23,6 +23,7 @@ USE work.common.ALL;
 entity FETCH is
   port(in_ext_to_all  : in ext_to_all_t;
        in_de_to_fe    : in de_to_fe_t;
+       in_ex_to_fe    : in ex_to_fe_t; 
        out_fe_to_de   : out fe_to_de_t);
 end entity;
 
@@ -56,14 +57,14 @@ begin
   --INCREMENT PC VALUE
   w_pc4 <= std_logic_vector(unsigned(r_pc) + 4);
   --SELECT CURRENT PC VALUE
-  w_pcmux <= in_de_to_fe.pc4 when in_de_to_fe.muxpc = c_MUXPC_PC4 else
+  w_pcmux <= w_pc4 when in_de_to_fe.muxpc = c_MUXPC_PC4 else
              in_de_to_fe.jaladr when in_de_to_fe.muxpc = c_MUXPC_JAL else
              in_de_to_fe.jalradr when in_de_to_fe.muxpc = c_MUXPC_JALR else
-             in_de_to_fe.branchadr when in_de_to_fe.muxpc = c_MUXPC_BRANCH;
+             in_ex_to_fe.branchadr when in_de_to_fe.muxpc = c_MUXPC_BRANCH;
   --OUTPUT CURRENT PC VALUE AND INCREMENTED PC VALUE
   out_fe_to_de.pc <= r_pc;
   out_fe_to_de.pc4 <= w_pc4;
   --FETCH NEXT INSTRUCTION FROM MEMORY OR STALL WITH NOP
   out_fe_to_de.instr <= w_memout when in_de_to_fe.muxnop = '0' else
-               (others => '0') when in_de_to_fe.muxnop = '1';
+                        x"00000013" when in_de_to_fe.muxnop = '1'; -- NOP == addi x0, x0, 0
 end RTL;
