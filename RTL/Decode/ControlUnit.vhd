@@ -111,8 +111,8 @@ begin
         w_jalr <= false; 
       when b"11000" => --branch opcode
         w_alucntrl <= c_ALU_ADD;
-        w_muxrs1 <= c_MUXRS1_PC;
-        w_muxrs2 <= c_MUXRS2_IMM;
+        w_muxrs1 <= c_MUXRS1_REG;
+        w_muxrs2 <= c_MUXRS2_REG;
         w_muxalu <= c_MUXALU_ALU;
         w_regop <= c_REG_WD;
         w_memop <= c_MEM_WD;

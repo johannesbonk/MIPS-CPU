@@ -79,6 +79,7 @@ architecture RTL of DECODE is
   signal w_cumuxpc : muxpc_t; 
   signal w_cumuxnop : muxnop_t; 
   signal w_cubranch : branch_t; 
+  signal w_custallfe : stall_t; 
   -- FORWARDING UNIT
   signal w_fwdmuxfwdrs1 : muxfwdrs1_t; 
   signal w_fwdmuxfwdrs2 : muxfwdrs2_t;  
@@ -241,4 +242,5 @@ begin
  out_de_to_fe.jalradr <= w_jalradr; 
  out_de_to_fe.muxpc <= w_cumuxpc; 
  out_de_to_fe.muxnop <= w_cumuxnop; 
+ out_de_to_fe.stall <= w_custallfe; 
 end RTL;

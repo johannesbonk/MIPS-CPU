@@ -122,6 +122,7 @@ package common is
     branchadr : reglen_t; --current(new or predicted) branch address
     muxpc     : muxpc_t; --multiplexes new pc value
     muxnop    : muxnop_t; --muxes either currrent op or a NOP
+    stall     : stall_t; -- stall fetch stage 
   end record de_to_fe_t;
 
   type de_to_regfile_t is record

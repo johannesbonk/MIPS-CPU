@@ -39,14 +39,16 @@ architecture RTL of FETCH is
   signal w_memout : reglen_t;
 begin
   --STORE CURRENT PC VALUE IN REGISTER
-  p_PROGRAM_COUNTER : process(in_ext_to_all.clk, in_ext_to_all.clr)
+  p_PROGRAM_COUNTER : process(in_ext_to_all.clk, in_ext_to_all.clr, in_de_to_fe.stall)
   begin
-    if(rising_edge(in_ext_to_all.clk)) then
-      r_pc <= w_pcmux;
-    end if;
-    if(falling_edge(in_ext_to_all.clr)) then
-      r_pc <= (others => '0');
-    end if;
+    if(in_de_to_fe.stall = c_STALL_NO) then 
+      if(rising_edge(in_ext_to_all.clk)) then
+        r_pc <= w_pcmux;
+      end if;
+      if(falling_edge(in_ext_to_all.clr)) then
+        r_pc <= (others => '0');
+      end if;
+    end if; 
   end process;
   -- INSTRUCTION MEMORY INTERCONNECT
   instruction_memory: entity work.InstructionMemory(RTL)
