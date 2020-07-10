@@ -52,6 +52,6 @@ begin
     execute_stage: entity work.EXECUTE(RTL) -- instance of EXECUTE.vhd
     port map (in_ext_to_all => w_ext_to_all,
               in_de_to_ex => w_de_to_ex,
-              out_ex_to_de => w_ex_to_de
+              out_ex_to_de => w_ex_to_de,
               out_ex_to_fe => w_ex_to_fe); 
 end RTL;

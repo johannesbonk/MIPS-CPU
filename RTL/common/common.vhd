@@ -52,9 +52,10 @@ package common is
     constant c_ALU_SRL  : alucntrl_t := "0101";
     constant c_ALU_SRA  : alucntrl_t := "1101";
 
-  subtype muxrs1_t is std_logic; --selects either register 1 or 0 value
-    constant c_MUXRS1_REG   : muxrs1_t := '0';
-    constant c_MUXRS1_ZERO  : muxrs1_t := '1';
+  subtype muxrs1_t is std_logic_vector(1 downto 0); --selects either register 1, pc or 0 value
+    constant c_MUXRS1_REG   : muxrs1_t := "00";
+    constant c_MUXRS1_ZERO  : muxrs1_t := "01";
+    constant c_MUXRS1_PC    : muxrs1_t := "10"; 
 
   subtype muxrs2_t is std_logic; --selects either register or sign/zero extended value
     constant c_MUXRS2_REG   : muxrs2_t := '0'; --also used for shamt
@@ -188,6 +189,8 @@ package common is
     -- DECODER FEEDBACK
     rd        : regadr_t; 
     -- CURRENT PROGRAM COUNTER
+    pc        : reglen_t; 
+    -- NEXT PROGRAM COUNTER
     pc4       : reglen_t;
     -- BRANCH TARGET PROGRAM COUNTER
     branchadr : reglen_t;  

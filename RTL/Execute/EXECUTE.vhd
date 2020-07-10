@@ -23,7 +23,7 @@ USE work.common.ALL;
 entity EXECUTE is
   port(in_ext_to_all  : in ext_to_all_t;
        in_de_to_ex    : in de_to_ex_t;
-       out_ex_to_de   : out ex_to_de_t
+       out_ex_to_de   : out ex_to_de_t;
        out_ex_to_fe   : out ex_to_fe_t);
 end entity;
 
@@ -40,6 +40,7 @@ architecture behavior of EXECUTE is
   signal r_regop     : regop_t; 
   signal r_memop     : memop_t;  
   signal r_branch    : branch_t; 
+  signal r_pc        : reglen_t; 
   signal r_pc4       : reglen_t; 
   signal r_branchadr : reglen_t; 
 
@@ -48,6 +49,7 @@ architecture behavior of EXECUTE is
   signal w_aluop_b  : reglen_t;
   signal w_alures   : reglen_t;
   signal w_memout   : reglen_t;
+  signal w_branch   : boolean; 
 
   component ALU is
     port(in_ex_to_alu  : in ex_to_alu_t;
@@ -82,6 +84,7 @@ begin
       r_rd <= in_de_to_ex.rd; 
       r_branch <= in_de_to_ex.branch; 
       r_branchadr <= in_de_to_ex.branchadr; 
+      r_pc <= in_de_to_ex.pc; 
       r_pc4 <= in_de_to_ex.pc; 
     end if;
     if(falling_edge(in_ext_to_all.clr)) then
@@ -97,12 +100,14 @@ begin
       r_rd <= (others => '0'); 
       r_branch <= c_BRANCH_NO; 
       r_branchadr <= (others => '0'); 
+      r_pc <= (others => '0'); 
       r_pc4 <= (others => '0'); 
     end if;
   end process;
   --MULTIPLEX ALU OPERAND A
    w_aluop_a <= r_rs1 when r_muxrs1 = c_MUXRS1_REG else
-                (others => '0') when r_muxrs1 = c_MUXRS1_ZERO;
+                (others => '0') when r_muxrs1 = c_MUXRS1_ZERO else 
+                r_pc when r_muxrs1 = c_MUXRS1_PC;
   --MULTIPLEX ALU OPERAND B
    w_aluop_b <= r_rs2 when r_muxrs2 = c_MUXRS2_REG else
                 r_imm when r_muxrs2 = c_MUXRS2_IMM;
@@ -117,7 +122,7 @@ begin
   port map (in_ex_to_bu.op_a => r_rs1,
             in_ex_to_bu.op_b => r_rs2,
             in_ex_to_bu.branch => r_branch,
-            out_bu_to_ex.branch => w_branch); --direct connection to execution stage output
+            out_bu_to_ex.branch => w_branch); 
   --Data Memory connection
   dmem1: entity work.DataMemory(RTL) -- instance of DataMemory.vhd
   port map (in_ext_to_all.clk => in_ext_to_all.clk,
@@ -126,13 +131,18 @@ begin
             in_ex_to_dmem.addr => w_alures,
             in_ex_to_dmem.memop => r_memop,
             out_dmem_to_ex.data => w_memout);
+  --************EXECUTION PHASE OUT TO FETCH PHASE******************
+  -- BRANCH  ADDRESS PASS THROUGH
+  out_ex_to_fe.branchadr <= r_branchadr; 
   --************EXECUTION PHASE OUT TO DECODE PHASE******************
   --REGOP PASS THROUGH
   out_ex_to_de.regop <= r_regop;
-  -- BRANCH  ADDRESS PASS THROUGH
-  out_ex_to_fe.branchadr <= r_branchadr; 
+  --REGISTER DESTINATION PASS THROUGH
+  out_ex_to_de.rd <= r_rd; 
   --MULTIPLEX ALU/MEMORY OUTPUT
-  out_ex_to_de.alures <= w_alures when r_muxalu = c_MUXALU_ALU else
-                         w_memout when r_muxalu = c_MUXALU_MEM else
-                         r_pc4 when r_muxalu = c_MUXALU_PC;
+  out_ex_to_de.res <= w_alures when r_muxalu = c_MUXALU_ALU else
+                      w_memout when r_muxalu = c_MUXALU_MEM else
+                      r_pc4 when r_muxalu = c_MUXALU_PC;
+  --BRANCH TRUE/FALSE
+  out_ex_to_de.branch <= w_branch; 
 end behavior;

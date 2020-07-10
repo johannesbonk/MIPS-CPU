@@ -119,7 +119,6 @@ begin
   w_exregop <= in_ex_to_de.regop;
   w_exrd <= in_ex_to_de.rd;  
   w_exbranch <= in_ex_to_de.branch; 
-  w_exbranchadr <= in_ex_to_de.branchadr;
  ----------------------------------------------------
  --|            ASSIGN INPUTS (internal)            |
  ---------------------------------------------------- 
@@ -199,7 +198,7 @@ begin
   --JUMP AND LINK REGISTER TARGET
   w_jalradr <= (std_logic_vector(unsigned(w_fwdrs1) + unsigned(w_imm))) and x"ff_ff_ff_fe";
   --BRANCH TARGET 
-  w_branchadr <= std_logic_vector(to_integer(unsigned(w_pc)) + to_integer(signed(w_imm)));
+  w_branchadr <= std_logic_vector(to_unsigned(to_integer(unsigned(r_pc)) + to_integer(signed(w_imm)), w_branchadr'length));
  ----------------------------------------------------
  --|           ASSIGN OUTPUTS (internal)            |
  ----------------------------------------------------   
@@ -235,6 +234,7 @@ begin
  out_de_to_ex.regop <= w_curegop; 
  out_de_to_ex.memop <= w_cumemop; 
  out_de_to_ex.branch <= w_cubranch; 
+ out_de_to_ex.pc <= r_pc; 
  out_de_to_ex.pc4 <= r_pc4; 
  out_de_to_ex.branchadr <= w_branchadr; 
 
