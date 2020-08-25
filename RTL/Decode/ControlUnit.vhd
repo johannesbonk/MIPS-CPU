@@ -148,19 +148,28 @@ begin
       --     when b"101" => --CSRRWI
       --     when b"110" => --CSRRSI
       --     when b"111" => --CSRRCI
-      when others => --non existant opcode 
+      when others => --non existant opcode (perform arithmetic operation without storing the result)
+         w_alucntrl <= in_de_to_cu.func7(in_de_to_cu.func7'high - 1) & in_de_to_cu.func3;
+        w_muxrs1 <= c_MUXRS1_REG;
+        w_muxrs2 <= c_MUXRS2_REG;
+        w_muxalu <= c_MUXALU_ALU;
+        w_regop <= c_REG_WD;
+        w_memop <= c_MEM_WD;
+        w_branch <= false; 
+        w_jal <= false; 
+        w_jalr <= false; 
       end case; 
   end process p_DECODE; 
 
     -- HAZARD DETECTION / STALL FETCH STAGE AND INSERT BUBBLE (MUXNOP)
-    p_DETECT_HAZARD: process(w_branch)
+    p_DETECT_HAZARD: process(w_branch, in_de_to_cu.func3)
     begin
       case w_branch is 
         when true => 
           w_branch_out <= in_de_to_cu.func3; 
           w_muxnop <= c_MUXNOP_NOP; 
           w_stallfe <= c_STALL_YES; 
-        when false => 
+        when others => 
           w_branch_out <= c_BRANCH_NO; 
           w_muxnop <= c_MUXNOP_OP; 
           w_stallfe <= c_STALL_NO; 

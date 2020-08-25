@@ -15,15 +15,15 @@ architecture RTL of RegisterFile is
   type reg_t is array(0 to 2**(regadr_t'length)) of reglen_t;
   signal r_reg_file : reg_t := (others => (others => '0'));
 begin
-  p_REG_FILE : process (in_ext_to_all.clk, in_ext_to_all.clr) is
+  p_REG_FILE : process (in_ext_to_all.clk) is
   begin
     if rising_edge(in_ext_to_all.clk) then
-      if((in_de_to_regfile.regop = c_REG_WE) and (in_de_to_regfile.rd /= b"00000")) then
+      r_reg_file <= r_reg_file;
+      if(in_ext_to_all.clr = '1') then 
+        r_reg_file <= (others => (others => '0'));
+      elsif((in_de_to_regfile.regop = c_REG_WE) and (in_de_to_regfile.rd /= b"00000")) then
         r_reg_file(to_integer(unsigned(in_de_to_regfile.rd))) <= in_de_to_regfile.wrin;
-      end if;
-    end if;
-    if falling_edge(in_ext_to_all.clr) then
-      r_reg_file <= (others => (others => '0'));
+      end if; 
     end if;
   end process p_REG_FILE;
 

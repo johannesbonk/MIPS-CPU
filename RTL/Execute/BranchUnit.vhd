@@ -25,7 +25,7 @@ entity BranchUnit is
        out_bu_to_ex : out bu_to_ex_t);
 end entity;
 
-architecture behavior of BranchUnit is
+architecture logic of BranchUnit is
   signal w_beq  : std_logic; 
   signal w_bne  : std_logic; 
   signal w_blt  : std_logic; 
@@ -54,4 +54,4 @@ begin
                          true when ((in_ex_to_bu.branch = c_BRANCH_BLTU) and w_bltu = '1') else 
                          true when ((in_ex_to_bu.branch = c_BRANCH_BGEU) and w_bgeu = '1') else
                          false;  
-end behavior;
+end logic;

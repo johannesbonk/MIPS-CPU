@@ -23,11 +23,13 @@ USE work.common.ALL;
 entity EXECUTE is
   port(in_ext_to_all  : in ext_to_all_t;
        in_de_to_ex    : in de_to_ex_t;
+       in_dmem_to_ex  : in dmem_to_ex_t; 
+       out_ex_to_dmem : out ex_to_dmem_t;
        out_ex_to_de   : out ex_to_de_t;
        out_ex_to_fe   : out ex_to_fe_t);
 end entity;
 
-architecture behavior of EXECUTE is
+architecture RTL of EXECUTE is
   --PIPELINE REGISTER FOR OUTPUT SIGNALS OF INSTRUCTION DECODE PHASE
   signal r_rs1       : reglen_t; 
   signal r_rs2       : reglen_t; 
@@ -48,7 +50,6 @@ architecture behavior of EXECUTE is
   signal w_aluop_a  : reglen_t;
   signal w_aluop_b  : reglen_t;
   signal w_alures   : reglen_t;
-  signal w_memout   : reglen_t;
   signal w_branch   : boolean; 
 
   component ALU is
@@ -61,56 +62,69 @@ architecture behavior of EXECUTE is
          out_bu_to_ex : out bu_to_ex_t);
   end component BranchUnit;
 
-  component DataMemory is
-  port(in_ext_to_all : in ext_to_all_t;
-      in_ex_to_dmem  : in ex_to_dmem_t;
-      out_dmem_to_ex : out dmem_to_ex_t);
-  end component DataMemory;
-
 begin
   --LOAD PIPELINE REGISTER
   p_PIPELINE_REGISTER: process(in_ext_to_all.clk)
   begin
     if(rising_edge(in_ext_to_all.clk)) then
-      r_rs1 <= in_de_to_ex.rs1;
-      r_rs2 <= in_de_to_ex.rs2;
-      r_imm  <= in_de_to_ex.imm;
-      r_muxrs1 <= in_de_to_ex.muxrs1;
-      r_muxrs2 <= in_de_to_ex.muxrs2;
-      r_muxalu <= in_de_to_ex.muxalu;
-      r_alucntrl <= in_de_to_ex.alucntrl;
-      r_regop <= in_de_to_ex.regop;
-      r_memop <= in_de_to_ex.memop;
-      r_rd <= in_de_to_ex.rd; 
-      r_branch <= in_de_to_ex.branch; 
-      r_branchadr <= in_de_to_ex.branchadr; 
-      r_pc <= in_de_to_ex.pc; 
-      r_pc4 <= in_de_to_ex.pc; 
-    end if;
-    if(falling_edge(in_ext_to_all.clr)) then
-      r_rs1 <= (others => '0');
-      r_rs2 <= (others => '0');
-      r_imm <= (others => '0'); 
-      r_muxrs1 <= (others => '0');
-      r_muxrs2 <= '0';
-      r_muxalu <= (others => '0');
-      r_alucntrl <= (others => '0');
-      r_regop <= c_REG_WD;
-      r_memop <= c_MEM_WD;
-      r_rd <= (others => '0'); 
-      r_branch <= c_BRANCH_NO; 
-      r_branchadr <= (others => '0'); 
-      r_pc <= (others => '0'); 
-      r_pc4 <= (others => '0'); 
+      if(in_ext_to_all.clr = '1') then 
+          r_rs1 <= (others => '0');
+          r_rs2 <= (others => '0');
+          r_imm <= (others => '0'); 
+          r_muxrs1 <= (others => '0');
+          r_muxrs2 <= '0';
+          r_muxalu <= (others => '0');
+          r_alucntrl <= (others => '0');
+          r_regop <= c_REG_WD;
+          r_memop <= c_MEM_WD;
+          r_rd <= (others => '0'); 
+          r_branch <= c_BRANCH_NO; 
+          r_branchadr <= (others => '0'); 
+          r_pc <= (others => '0'); 
+          r_pc4 <= (others => '0'); 
+      else
+          r_rs1 <= in_de_to_ex.rs1;
+          r_rs2 <= in_de_to_ex.rs2;
+          r_imm  <= in_de_to_ex.imm;
+          r_muxrs1 <= in_de_to_ex.muxrs1;
+          r_muxrs2 <= in_de_to_ex.muxrs2;
+          r_muxalu <= in_de_to_ex.muxalu;
+          r_alucntrl <= in_de_to_ex.alucntrl;
+          r_regop <= in_de_to_ex.regop;
+          r_memop <= in_de_to_ex.memop;
+          r_rd <= in_de_to_ex.rd; 
+          r_branch <= in_de_to_ex.branch; 
+          r_branchadr <= in_de_to_ex.branchadr; 
+          r_pc <= in_de_to_ex.pc; 
+          r_pc4 <= in_de_to_ex.pc4; 
+      end if; 
     end if;
   end process;
+  
   --MULTIPLEX ALU OPERAND A
-   w_aluop_a <= r_rs1 when r_muxrs1 = c_MUXRS1_REG else
-                (others => '0') when r_muxrs1 = c_MUXRS1_ZERO else 
-                r_pc when r_muxrs1 = c_MUXRS1_PC;
+  p_MUX_OP_A: process(r_muxrs1, r_rs1, r_pc) 
+  begin 
+    if(r_muxrs1 = c_MUXRS1_REG) then 
+        w_aluop_a <= r_rs1; 
+    else 
+        if(r_muxrs1 = c_MUXRS1_ZERO) then
+            w_aluop_a <= (others => '0');
+        else
+            w_aluop_a <= r_pc; 
+        end if; 
+    end if; 
+  end process;
+   
   --MULTIPLEX ALU OPERAND B
-   w_aluop_b <= r_rs2 when r_muxrs2 = c_MUXRS2_REG else
-                r_imm when r_muxrs2 = c_MUXRS2_IMM;
+  p_MUX_OP_B: process(r_muxrs2, r_rs2, r_imm) 
+  begin 
+    if(r_muxrs2 = c_MUXRS2_REG) then
+        w_aluop_b <= r_rs2;  
+    else 
+        w_aluop_b <= r_imm; 
+    end if; 
+  end process; 
+  
   --ALU CONNECTION
   alu1: entity work.ALU(logic) -- instance of ALU.vhd
   port map (in_ex_to_alu.op_a => w_aluop_a,
@@ -123,14 +137,6 @@ begin
             in_ex_to_bu.op_b => r_rs2,
             in_ex_to_bu.branch => r_branch,
             out_bu_to_ex.branch => w_branch); 
-  --Data Memory connection
-  dmem1: entity work.DataMemory(RTL) -- instance of DataMemory.vhd
-  port map (in_ext_to_all.clk => in_ext_to_all.clk,
-            in_ext_to_all.clr => in_ext_to_all.clr,
-            in_ex_to_dmem.data => r_rs2,
-            in_ex_to_dmem.addr => w_alures,
-            in_ex_to_dmem.memop => r_memop,
-            out_dmem_to_ex.data => w_memout);
   --************EXECUTION PHASE OUT TO FETCH PHASE******************
   -- BRANCH  ADDRESS PASS THROUGH
   out_ex_to_fe.branchadr <= r_branchadr; 
@@ -139,10 +145,25 @@ begin
   out_ex_to_de.regop <= r_regop;
   --REGISTER DESTINATION PASS THROUGH
   out_ex_to_de.rd <= r_rd; 
+  
   --MULTIPLEX ALU/MEMORY OUTPUT
-  out_ex_to_de.res <= w_alures when r_muxalu = c_MUXALU_ALU else
-                      w_memout when r_muxalu = c_MUXALU_MEM else
-                      r_pc4 when r_muxalu = c_MUXALU_PC;
+  p_MUX_RES: process(r_muxalu, w_alures, in_dmem_to_ex.data, r_pc4)
+  begin 
+    if(r_muxalu = c_MUXALU_ALU) then
+        out_ex_to_de.res <= w_alures; 
+    else 
+        if(r_muxalu = c_MUXALU_MEM) then 
+            out_ex_to_de.res <= in_dmem_to_ex.data; 
+        else -- when r_muxalu = c_MUXALU_PC
+            out_ex_to_de.res <= r_pc4; 
+        end if; 
+    end if; 
+  end process; 
+  
   --BRANCH TRUE/FALSE
   out_ex_to_de.branch <= w_branch; 
-end behavior;
+  --DATA MEMORY INTECONNECT
+  out_ex_to_dmem.data <= r_rs2;
+  out_ex_to_dmem.addr <= w_alures;
+  out_ex_to_dmem.memop <= r_memop;
+end RTL;

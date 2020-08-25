@@ -49,14 +49,15 @@ begin
   end process;
 
   --multiplex required operation
-  out_alu_to_ex.res <= std_logic_vector(unsigned(in_ex_to_alu.op_a) + unsigned(in_ex_to_alu.op_b)) when in_ex_to_alu.cntrl = c_ALU_ADD else --addition
-                       std_logic_vector(unsigned(in_ex_to_alu.op_a) - unsigned(in_ex_to_alu.op_b))  when in_ex_to_alu.cntrl = c_ALU_SUB else --subtraction
-                       in_ex_to_alu.op_a and in_ex_to_alu.op_b when in_ex_to_alu.cntrl = c_ALU_AND else --ANDing
-                       in_ex_to_alu.op_a or in_ex_to_alu.op_b when in_ex_to_alu.cntrl = c_ALU_OR else --ORing
-                       in_ex_to_alu.op_a xor in_ex_to_alu.op_b when in_ex_to_alu.cntrl = c_ALU_XOR else --XORing
-                       std_logic_vector(shift_left(unsigned(in_ex_to_alu.op_a), to_integer(unsigned(in_ex_to_alu.op_b)))) when in_ex_to_alu.cntrl = c_ALU_SLL else --shift left logically
-                       std_logic_vector(shift_right(unsigned(in_ex_to_alu.op_a), to_integer(unsigned(in_ex_to_alu.op_b)))) when in_ex_to_alu.cntrl = c_ALU_SRL else --shift right logically
-                       std_logic_vector(shift_right(signed(in_ex_to_alu.op_a), to_integer(unsigned(in_ex_to_alu.op_b)))) when in_ex_to_alu.cntrl = c_ALU_SRA else --shift right arithmetically
-                       w_slt when in_ex_to_alu.cntrl = c_ALU_SLT else --set less than
-                       w_sltu when in_ex_to_alu.cntrl = c_ALU_SLTU; --set less than unsigned
+  with in_ex_to_alu.cntrl select 
+  out_alu_to_ex.res <= std_logic_vector(unsigned(in_ex_to_alu.op_a) + unsigned(in_ex_to_alu.op_b)) when c_ALU_ADD, --addition
+                       std_logic_vector(unsigned(in_ex_to_alu.op_a) - unsigned(in_ex_to_alu.op_b)) when c_ALU_SUB, --subtraction
+                       in_ex_to_alu.op_a and in_ex_to_alu.op_b when c_ALU_AND, --ANDing
+                       in_ex_to_alu.op_a or in_ex_to_alu.op_b when c_ALU_OR, --ORing
+                       in_ex_to_alu.op_a xor in_ex_to_alu.op_b when c_ALU_XOR, --XORing
+                       std_logic_vector(shift_left(unsigned(in_ex_to_alu.op_a), to_integer(unsigned(in_ex_to_alu.op_b)))) when c_ALU_SLL, --shift left logically
+                       std_logic_vector(shift_right(unsigned(in_ex_to_alu.op_a), to_integer(unsigned(in_ex_to_alu.op_b)))) when c_ALU_SRL, --shift right logically
+                       std_logic_vector(shift_right(signed(in_ex_to_alu.op_a), to_integer(unsigned(in_ex_to_alu.op_b)))) when c_ALU_SRA, --shift right arithmetically
+                       w_slt when c_ALU_SLT, --set less than
+                       w_sltu when others; --set less than unsigned
 end logic;

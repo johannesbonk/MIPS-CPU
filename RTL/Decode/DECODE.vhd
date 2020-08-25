@@ -132,6 +132,7 @@ begin
   w_cumuxpc <= w_cu_to_de.muxpc; 
   w_cumuxnop <= w_cu_to_de.muxnop;
   w_cubranch <= w_cu_to_de.branch;  
+  w_custallfe <= w_cu_to_de.stallfe; 
   -- FORWARDING UNIT
   w_fwdmuxfwdrs1 <= w_fwd_to_de.muxfwdrs1; 
   w_fwdmuxfwdrs2 <= w_fwd_to_de.muxfwdrs2; 
@@ -145,15 +146,16 @@ begin
   p_PIPELINE_REGISTER : process(in_ext_to_all.clk, in_ext_to_all.clr)
   begin
     if(rising_edge(in_ext_to_all.clk)) then
-      r_instr <= in_fe_to_de.instr;
-      r_pc <= in_fe_to_de.pc;
-      r_pc4 <= in_fe_to_de.pc4;
+      if(in_ext_to_all.clr = '1') then -- clear pipeline register on reset
+          r_instr <= x"00000013";
+          r_pc <= (others => '0');
+          r_pc4 <= (others => '0');
+      else 
+          r_instr <= in_fe_to_de.instr;
+          r_pc <= in_fe_to_de.pc;
+          r_pc4 <= in_fe_to_de.pc4;
+      end if; 
     end if;
-    if(falling_edge(in_ext_to_all.clr)) then -- clear pipeline register on reset
-      r_instr <= x"00000013";
-      r_pc <= (others => '0');
-      r_pc4 <= (others => '0');
-  end if;
   end process p_PIPELINE_REGISTER; 
   ----------------------------------------------------
   --|             EVALUATE INSTRUCTION               |

@@ -120,7 +120,7 @@ package common is
   type de_to_fe_t is record
     jaladr    : reglen_t; --new jump address
     jalradr   : reglen_t; --new jump and link address
-    branchadr : reglen_t; --current(new or predicted) branch address
+    -- branchadr : reglen_t; --current(new or predicted) branch address
     muxpc     : muxpc_t; --multiplexes new pc value
     muxnop    : muxnop_t; --muxes either currrent op or a NOP
     stall     : stall_t; -- stall fetch stage 
